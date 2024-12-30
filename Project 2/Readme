@@ -1,1 +1,8 @@
-
+This project highlights a combination of theoretical knowledge, analytical rigor, and practical skills essential for addressing complex data-driven challenges:
+- Statistical Inference and Methodology: Demonstrated expertise in statistical methodologies, including Maximum Likelihood Estimation (MLE), Method of Moments (MOM), and Bayesian Estimation, analyzing their theoretical foundations, strengths, and limitations.
+- Empirical Evaluation: Designed and implemented rigorous empirical experiments to assess the performance of estimation methods across varying scenarios, such as diverse sample sizes, distributions, and parameter settings.
+- Data Analysis and Preprocessing: Conducted thorough data cleaning and preprocessing on the Student Performance dataset, handling socio-economic and academic variables to ensure data quality and relevance.
+- Predictive Modeling: Evaluated estimation techniques for predicting student academic outcomes, leveraging statistical and computational approaches.
+- Programming and Tools: Utilized R for statistical modeling, data manipulation, and visualization with packages such as tidyverse, ggplot2, and BayesFactor.
+- Critical Analysis and Reporting: Compared methodologies using both theoretical and practical perspectives, synthesizing findings into clear, actionable insights for the academic community.
+- Application of Statistical Concepts to Real-world Data: Bridged theoretical statistical methods with practical applications, showcasing the adaptability and utility of these approaches in real-world scenarios.
