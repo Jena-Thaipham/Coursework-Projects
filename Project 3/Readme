@@ -1,3 +1,4 @@
+        Forecasting Canadian Immigration Patterns with Time Series Models
 This project highlights a blend of statistical theory, machine learning proficiency, and practical skills in forecasting and data analysis, crucial for addressing real-world challenges in demographic and immigration studies.
 - Time Series Analysis: Applied traditional time series methods such as Exponentially Weighted Moving Average (EWMA) and ARIMA, enhancing skills in analyzing and forecasting temporal data trends over extended periods (1971–2023).
 - Machine Learning Integration: Developed a hybrid forecasting model combining ARIMA and XGBoost, demonstrating expertise in integrating statistical and machine learning techniques to enhance model accuracy and predictive power.
