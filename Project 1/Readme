@@ -1,0 +1,7 @@
+            House Pricing Prediction in Melbourne
+This project focuses on building predictive models to estimate house prices in Melbourne, Australia. The analysis includes:
+-   Conducted Exploratory Data Analysis (EDA) to uncover insights and preprocess data.
+-   Built predictive models using Multiple Linear Regression (MLR), LASSO, Ridge Regression
+-  Applied feature selection and dimensionality reduction (PCR) techniques to enhance model performance.
+-  Evaluated models using metrics such as RMSE, R-squared, and cross-validation to ensure robustness.
+-  Tools: R, tidyverse, glmnet, caret, ggplot2.
