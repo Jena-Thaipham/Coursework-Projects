@@ -1,1 +1,9 @@
-
+This project highlights a blend of statistical theory, machine learning proficiency, and practical skills in forecasting and data analysis, crucial for addressing real-world challenges in demographic and immigration studies.
+- Time Series Analysis: Applied traditional time series methods such as Exponentially Weighted Moving Average (EWMA) and ARIMA, enhancing skills in analyzing and forecasting temporal data trends over extended periods (1971–2023).
+- Machine Learning Integration: Developed a hybrid forecasting model combining ARIMA and XGBoost, demonstrating expertise in integrating statistical and machine learning techniques to enhance model accuracy and predictive power.
+- Data Handling and Preprocessing: Managed and processed large, multi-variable datasets (CANSIM 051-0004), cleaning and preparing data for analysis, ensuring quality and accuracy for reliable model predictions.
+- Forecasting and Model Evaluation: Implemented and compared multiple forecasting models, evaluating their performance using key metrics such as Root Mean Squared Error (RMSE) and Mean Absolute Error (MAE) to determine the most accurate approaches.
+- Advanced Machine Learning Techniques: Gained hands-on experience with advanced machine learning algorithms, specifically XGBoost, for improving model performance in forecasting complex immigration patterns.
+- Statistical Modeling and Analysis: Applied rigorous statistical techniques for time series forecasting, offering insights into demographic trends and their implications on Canada’s immigration policies.
+- Programming and Tools: Utilized R for time series analysis, model implementation, and visualization, alongside libraries such as forecast, xgboost, and ggplot2 for model development and performance evaluation.
+- Reporting and Decision-Making: Communicated findings effectively, translating complex statistical results into actionable insights that support informed decision-making for demographic planning and policy development.
