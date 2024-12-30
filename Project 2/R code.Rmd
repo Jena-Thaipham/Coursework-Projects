@@ -1,0 +1,1094 @@
+---
+title: "STAT 5310 - Final project"
+author: "Thai Pham- T00727094"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# 1. Load the packages and data sets
+```{r, message = FALSE}
+pkg_list <- c("dplyr", "caret", "boot","calibrate", "gridExtra","MASS", "ggplot2", "reshape2", "stats") 
+# Install packages if needed
+for (pkg in pkg_list)
+{
+  # Try loading the library.
+  if ( ! library(pkg, logical.return=TRUE, character.only=TRUE) )
+    {
+         # If the library cannot be loaded, install it; then load.
+        install.packages(pkg)
+        library(pkg, character.only=TRUE)
+  }
+}
+```
+
+```{r cache=TRUE}
+# Load the data 
+data<-read.csv("Student.csv")
+head(data)
+glimpse(data)
+summary(data)
+```
+
+# 2. Data engineering and EDA
+## PLots
+```{r}
+par(mfrow = c(3, 3))  # Set up a 3x3 grid for plotting
+variables_to_plot <- setdiff(names(data), "Extracurricular.Activities")  # Exclude 'Extracurricular.Activities'
+
+for (i in 1:length(variables_to_plot)) {
+  hist(data[, variables_to_plot[i]], main = paste("Histogram of", variables_to_plot[i]), xlab = variables_to_plot[i])
+}
+
+```
+```{r}
+# Plot boxplot for each numerical variable
+boxplot(data$Hours.Studied, main="Hours Studied Boxplot")
+boxplot(data$Previous.Scores, main="Previous Scores Boxplot")
+boxplot(data$Sleep.Hours, main="Sleep Hours Boxplot")
+boxplot(data$Sample.Question.Papers.Practiced, main="Sample Question Papers Practiced Boxplot")
+boxplot(data$Performance.Index, main="Performance Index Boxplot")
+
+```
+Checking Correlation 
+```{r}
+# Calculate the correlation matrix without the column 'Extracurricular.Activities'
+correlation_matrix <- cor(data[, !colnames(data) %in% "Extracurricular.Activities"])
+
+# Melt correlation matrix for ggplot2
+correlation_df <- melt(correlation_matrix)
+
+# Plot heatmap
+ggplot(correlation_df, aes(Var1, Var2, fill = value)) +
+  geom_tile(color = "white") +
+  scale_fill_gradient2(low = "blue", mid = "white", high = "red", 
+                       midpoint = 0, limit = c(-1,1), space = "Lab", 
+                       name="Correlation") +
+  geom_text(aes(label = round(value, 2)), color = "black") + # Add annotation
+  theme_minimal() + # Simple theme
+  labs(title = "Correlation Heatmap", x = "", y = "") + # Add titles
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, 
+                                   size = 10, hjust = 1)) # Rotate x-axis labels
+```
+
+## Engineering
+### a) Checking outliners
+```{r}
+# Function to calculate IQR for each variable
+calculate_iqr <- function(data) {
+  q1 <- quantile(data, 0.25)
+  q3 <- quantile(data, 0.75)
+  iqr <- q3 - q1
+  return(iqr)
+}
+
+# Function to find outliers based on IQR
+find_outliers <- function(data) {
+  q1 <- quantile(data, 0.25)
+  q3 <- quantile(data, 0.75)
+  iqr <- q3 - q1
+  lower_bound <- q1 - 1.5 * iqr
+  upper_bound <- q3 + 1.5 * iqr
+  outliers <- data[data < lower_bound | data > upper_bound]
+  return(outliers)
+}
+
+# Apply for each variable except Extracurricular.Activities
+outliers <- lapply(data[, -which(names(data) == "Extracurricular.Activities")], find_outliers)
+
+# Display the outliers
+print(outliers)
+
+```
+### b) Create categorical variables
+```{r}
+# Create dummy variables for "Extracurricular.Activities"
+student <- cbind(data, model.matrix(~ Extracurricular.Activities - 1, data = data))
+
+# Remove the original column "Extracurricular.Activities"
+student <- student[, -which(names(student) == "Extracurricular.Activities")]
+
+# Summary of the adjusted dataset
+summary(student)
+glimpse(student)
+
+```
+### c) Standardize data
+
+```{r}
+# Define a function for min-max scaling
+min_max_scale <- function(x) {
+  (x - min(x)) / (max(x) - min(x))
+}
+
+# Apply min-max scaling to numeric columns except for 'Extracurricular.ActivitiesNo' and 'Extracurricular.ActivitiesYes'
+scaled_data <- student
+numeric_cols <- c("Hours.Studied", "Previous.Scores", "Sleep.Hours", "Sample.Question.Papers.Practiced", "Performance.Index")
+scaled_data[, numeric_cols] <- lapply(scaled_data[, numeric_cols], min_max_scale)
+
+# Create the scales_student data frame
+scaled_student <- scaled_data
+
+# Check the structure of the scales_student data frame
+summary(scaled_student)
+```
+### d) Check missing value
+
+```{r}
+# Check for missing values in each column
+missing_values <- sapply(scaled_student, function(x) sum(is.na(x)))
+
+# Or count the total number of missing values in each column
+total_missing <- colSums(is.na(scaled_student))
+
+# Print the results
+print(missing_values)
+print(total_missing)
+
+```
+### e)  Check target variable's distribution 
+```{r}
+# Plot histogram of the target variable
+hist(scaled_student$Performance.Index, main = "Histogram of Performance Index", xlab = "Performance Index")
+
+# QQ Plot
+qqnorm(scaled_student$Performance.Index)
+qqline(scaled_student$Performance.Index)
+
+# Perform Kolmogorov-Smirnov test for normality
+ks_test <- ks.test(scaled_student$Performance.Index, "pnorm", mean = mean(scaled_student$Performance.Index), sd = sd(scaled_student$Performance.Index))
+
+# Print the test result
+print(ks_test)
+
+```
+
+
+# 3. Transformation target variable
+## 3.1 SQRT
+```{r}
+# Sqrt transformation
+sqrt_student <- scaled_student
+sqrt_student$Performance.Index <- sqrt(scaled_student$Performance.Index)
+
+# Plot histogram of original and transformed variable
+par(mfrow = c(1, 2))
+hist(scaled_student$Performance.Index, main = "Original Histogram", xlab = "Original Variable")
+hist(sqrt_student$Performance.Index, main = "Sqrt Transformed Histogram", xlab = "Sqrt Transformed Variable")
+
+# QQ Plot
+qqnorm(sqrt_student$Performance.Index)
+qqline(sqrt_student$Performance.Index)
+
+# Conduct Kolmogorov-Smirnov test for normality
+ks_test1 <- ks.test(sqrt_student$Performance.Index, "pnorm", mean = mean(sqrt_student$Performance.Index), sd = sd(sqrt_student$Performance.Index))
+print(ks_test1)
+
+```
+## 3.2 Log
+```{r}
+# Log transformation
+log_student <- student
+log_student$Performance.Index <- log(student$Performance.Index)
+log_student
+
+# Plot histogram of original and transformed variable
+par(mfrow = c(1, 2))
+hist(student$Performance.Index, main = "Original Histogram", xlab = "Original Variable")
+hist(log_student$Performance.Index, main = "Log Transformed Histogram", xlab = "Log Transformed Variable")
+
+# QQ Plot
+qqnorm(log_student$Performance.Index)
+qqline(log_student$Performance.Index)
+
+# Perform Kolmogorov-Smirnov test for normality
+ks_test2 <- ks.test(log_student$Performance.Index, "pnorm", mean = mean(log_student$Performance.Index), sd = sd(log_student$Performance.Index))
+
+# Print the test result
+print(ks_test2)
+
+# Kolmogorov-Smirnov test for log-normal distribution
+ks_test3 <- ks.test(log_student$Performance.Index, "plnorm", meanlog = mean(log(log_student$Performance.Index)), sdlog = sd(log(log_student$Performance.Index)))
+
+# Print the result
+print(ks_test3)
+
+
+```
+# 4. Parameter estimation
+
+## a) Define the target and predictors
+```{r}
+# Define the predictor variables (independent variables)
+predictors <- sqrt_student[, !names(scaled_student) %in% c("Performance.Index")]
+
+# Define the target variable (dependent variable)
+target <- sqrt_student$Performance.Index
+```
+
+
+## b) Split data into training and validation sets
+
+```{r cache=TRUE}
+# Set seed for reproducibility
+set.seed(129)
+
+# Number of observations
+n <- nrow(sqrt_student)
+
+# Calculate the number of observations for training (80%)
+n_train <- round(0.8 * n)
+
+# Randomly select indices for training
+train_indices <- sample(1:n, n_train, replace = FALSE)
+
+# Create training and validation datasets
+train_data <- sqrt_student[train_indices, ]
+validation_data <- sqrt_student[-train_indices, ]
+```
+
+## c) Preparation for parameter estimation 
+```{r}
+# Define the predictor variables (independent variables) for training data
+train_predictors <- train_data[, !names(train_data) %in% c("Performance.Index")]
+
+# Define the target variable (dependent variable) for training data
+train_target <- train_data$Performance.Index
+
+# Define the predictor variables (independent variables) for training data
+train_predictors <- train_data[, !names(train_data) %in% c("Performance.Index","Extracurricular.ActivitiesNo")]
+
+# Convert non-numeric predictor variables to numeric for training data
+for (col in names(train_predictors)) {
+  if (!is.numeric(train_predictors[[col]])) {
+    train_predictors[[col]] <- as.numeric(as.character(train_predictors[[col]]))
+  }
+}
+
+# Convert Extracurricular.ActivitiesYes to binary numeric (0 or 1) for training data
+train_predictors$Extracurricular.ActivitiesYes <- as.numeric(train_predictors$Extracurricular.ActivitiesYes != 0)
+
+# Convert train_predictors to a numeric matrix for training data
+train_predictors <- as.matrix(train_predictors)
+
+# Define the predictor variables (independent variables) for validation data
+validation_predictors <- validation_data[, !names(validation_data) %in% c("Performance.Index")]
+
+# Define the target variable (dependent variable) for validation data
+validation_target <- validation_data$Performance.Index
+
+# Define the predictor variables (independent variables) for validation data
+validation_predictors <- validation_data[, !names(validation_data) %in% c("Performance.Index","Extracurricular.ActivitiesNo")]
+
+# Convert non-numeric predictor variables to numeric for validation data
+for (col in names(validation_predictors)) {
+  if (!is.numeric(validation_predictors[[col]])) {
+    validation_predictors[[col]] <- as.numeric(as.character(validation_predictors[[col]]))
+  }
+}
+
+# Convert Extracurricular.ActivitiesYes to binary numeric (0 or 1) for validation data
+validation_predictors$Extracurricular.ActivitiesYes <- as.numeric(validation_predictors$Extracurricular.ActivitiesYes != 0)
+
+# Convert validation_predictors to a numeric matrix for validation data
+validation_predictors <- as.matrix(validation_predictors)
+
+```
+
+
+## 4.1. Fit model using R package
+```{r}
+# Fit LR model 
+model <- lm(Performance.Index ~ ., data = train_data[, !names(train_data) %in% c("Extracurricular.ActivitiesNo")])
+summary(model)
+
+```
+EVALUATION MODEL 
+```{r}
+# Predict on validation set
+predictions <- predict(model, newdata = validation_data)
+
+# Calculate evaluation metrics
+mse_val <- mean((predictions - validation_data$Performance.Index)^2)
+mae_val <- mean(abs(predictions - validation_data$Performance.Index))
+rmse_val <- sqrt(mse_val)
+R_squared_val <- summary(model)$r.squared
+
+# Print evaluation metrics
+print("MLR evaluation:")
+cat("Mean Squared Error (MSE): ", mse_val, "\n")
+cat("Mean Absolute Error (MAE): ", mae_val, "\n")
+cat("Root Mean Squared Error (RMSE): ", rmse_val, "\n")
+cat("R-squared: ", R_squared_val, "\n")
+```
+## 4.2 MLE optimizied by Newton - Graphson 
+PARAMETER ESTIMATION ON TRAINING SET
+
+```{r}
+# Define the target variable (dependent variable)
+Y <- train_target
+
+# Define the predictor variables (independent variables)
+X <- cbind(1, train_predictors)
+
+# Step 1: Define the log-likelihood function
+log_likelihood <- function(params, x, y) {
+  # Extract parameters
+  beta0 <- params[1]
+  beta1 <- params[2]
+  beta2 <- params[3]
+  beta3 <- params[4]
+  beta4 <- params[5]
+  beta5 <- params[6]
+  
+  # Calculate predicted values
+  y_pred <- beta0 + beta1*x[,1] + beta2*x[,2] + beta3*x[,3] + beta4*x[,4] + beta5*x[,5]
+  
+  # Calculate residuals
+  residuals <- y - y_pred
+  
+  # Calculate log-likelihood (assuming Gaussian errors)
+  log_likelihood <- sum(dnorm(residuals, mean = 0, sd = sd(residuals), log = TRUE))
+  
+  return(log_likelihood)
+}
+
+# Step 2:  Define the gradient of the log-likelihood function
+grad_log_likelihood <- function(params, x, y) {
+  # Extract parameters
+  beta0 <- params[1]
+  beta1 <- params[2]
+  beta2 <- params[3]
+  beta3 <- params[4]
+  beta4 <- params[5]
+  beta5 <- params[6]
+  
+  # Calculate predicted values
+  y_pred <- beta0 + beta1*x[,1] + beta2*x[,2] + beta3*x[,3] + beta4*x[,4] + beta5*x[,5]
+  
+  # Calculate residuals
+  residuals <- y - y_pred
+  
+  # Calculate gradient
+  grad <- colSums(residuals * x)
+  
+  return(grad)
+}
+
+# Step 3: Define the Hessian matrix of the log-likelihood function
+hessian_log_likelihood <- function(params, x, y) {
+  # Extract parameters
+  beta0 <- params[1]
+  beta1 <- params[2]
+  beta2 <- params[3]
+  beta3 <- params[4]
+  beta4 <- params[5]
+  beta5 <- params[6]
+  
+  # Calculate predicted values
+  y_pred <- beta0 + beta1*x[,1] + beta2*x[,2] + beta3*x[,3] + beta4*x[,4] + beta5*x[,5]
+  
+  # Calculate residuals
+  residuals <- y - y_pred
+  
+  # Calculate Hessian matrix
+  hessian <- t(x) %*% diag(residuals^2) %*% x
+  
+  return(hessian)
+}
+
+# Step 4: Define the Newton-Raphson optimization function
+newton_raphson <- function(params, x, y) {
+  # Define a small value for convergence criterion
+  epsilon <- 1e-6
+  
+  # Maximum number of iterations
+  max_iter <- 100
+  
+  # Initialize parameters and iteration counter
+  params_old <- params
+  iter <- 0
+  
+  # Iterate until convergence
+  while (iter < max_iter) {
+    # Update iteration counter
+    iter <- iter + 1
+    
+    # Calculate gradient and Hessian matrix
+    grad <- grad_log_likelihood(params_old, x, y)
+    hessian <- hessian_log_likelihood(params_old, x, y)
+    
+    # Calculate parameter update using Newton-Raphson formula
+    params_new <- params_old - solve(hessian) %*% grad
+    
+    # Check convergence
+    if (max(abs(params_new - params_old)) < epsilon) {
+      break
+    }
+    
+    # Update parameters for next iteration
+    params_old <- params_new
+  }
+  
+  return(params_new)
+}
+
+# Step 5: Estimate the Parameters using Newton-Raphson
+initial_params <- rep(0, 6)  # Initialize parameters
+mle_params_newton <- newton_raphson(initial_params, x = X, y = Y)
+
+# Display the MLE parameters
+print("Maximum Likelihood Estimates (Newton-Raphson):")
+print(mle_params_newton)
+```
+EVALUATE MLE_NR ON VALIDATION SET
+```{r}
+# Define the validation set
+Y_val <- validation_target
+X_val <- cbind(1, validation_predictors)
+
+# Calculate predicted values on validation set
+Y_pred_val <- X_val %*% mle_params_newton
+
+# Calculate residuals
+residuals_val <- Y_val - Y_pred_val
+
+# Calculate Mean Squared Error (MSE)
+mse_val <- mean(residuals_val^2)
+
+# Calculate Mean Absolute Error (MAE)
+mae_val <- mean(abs(residuals_val))
+
+# Calculate Root Mean Squared Error (RMSE)
+rmse_val <- sqrt(mean(residuals_val^2))
+
+# Print the evaluation metrics
+cat("MLE-NR Validation Set Metrics:\n")
+cat("Mean Squared Error (MSE): ", mse_val, "\n")
+cat("Mean Absolute Error (MAE): ", mae_val, "\n")
+cat("Root Mean Squared Error (RMSE): ", rmse_val, "\n")
+
+```
+## 4.3 MLE optimized by Gradient Descent 
+```{r}
+# Define the target variable (dependent variable)
+Y <- train_target
+
+# Define the predictor variables (independent variables)
+X <- cbind(1, train_predictors)
+
+# Step 1: Define the log-likelihood function
+log_likelihood2 <- function(params2, x, y) {
+  # Extract parameters
+  beta0 <- params2[1]
+  beta1 <- params2[2]
+  beta2 <- params2[3]
+  beta3 <- params2[4]
+  beta4 <- params2[5]
+  beta5 <- params2[6]
+  
+  # Calculate predicted values
+  y_pred <- beta0 + beta1*x[,1] + beta2*x[,2] + beta3*x[,3] + beta4*x[,4] + beta5*x[,5]
+  
+  # Calculate residuals
+  residuals <- y - y_pred
+  
+  # Calculate log-likelihood (assuming Gaussian errors)
+  log_likelihood <- sum(dnorm(residuals, mean = 0, sd = sd(residuals), log = TRUE))
+  
+  return(log_likelihood)
+}
+
+# Step 2:  Define the gradient of the log-likelihood function
+grad_log_likelihood2 <- function(params2, x, y, delta = 1e-6) {
+  # Initialize an empty vector to store the gradients
+  grad2 <- numeric(length(params2))
+  
+  # Calculate the gradient for each parameter
+  for (i in seq_along(params2)) {
+    # Perturb the parameter value
+    params_plus <- params2
+    params_plus[i] <- params_plus[i] + delta
+    
+    # Calculate the log-likelihood at the perturbed parameter value
+    log_likelihood_plus <- log_likelihood2(params_plus, x, y)
+    
+    # Perturb the parameter value in the opposite direction
+    params_minus <- params2
+    params_minus[i] <- params_minus[i] - delta
+    
+    # Calculate the log-likelihood at the perturbed parameter value
+    log_likelihood_minus <- log_likelihood2(params_minus, x, y)
+    
+    # Calculate the finite difference approximation of the gradient
+    grad2[i] <- (log_likelihood_plus - log_likelihood_minus) / (2 * delta)
+  }
+  
+  return(grad2)
+}
+
+# Step 3: Gradient Descent optimization function
+gradient_descent2 <- function(params2, x, y, learning_rate = 0.001, max_iter = 1000, epsilon = 1e-6) {
+  iter <- 0
+  while (iter < max_iter) {
+    iter <- iter + 1
+    
+    # Calculate predicted values
+    y_pred <- x %*% params2
+    
+    # Calculate residuals
+    residuals <- y - y_pred
+    
+    # Calculate gradient
+    grad <- grad_log_likelihood2(params2, x, y)
+    
+    # Check for NA values in gradient
+    if (any(is.na(grad))) {
+      print("Gradient contains NA values. Exiting...")
+      break
+    }
+    
+    # Update parameters
+    params2 <- params2 - learning_rate * grad
+    
+    # Check convergence
+    if (max(abs(learning_rate * grad)) < epsilon) {
+      break
+    }
+  }
+  return(params2)
+}
+
+# Step 4: Estimate the Parameters using GD
+initial_params2 <- rep(0, 6)  # Initialize parameters
+mle_params_gradient_descent2 <- gradient_descent2(initial_params2, x = X, y = Y)
+
+# Display the MLE parameters
+print("Maximum Likelihood Estimates (Gradient Descent):")
+print(mle_params_gradient_descent2)
+
+```
+EVALUATE MLE_GD ON VALIDATION SET
+```{r}
+# Define the validation set
+Y_val <- validation_target
+X_val <- cbind(1, validation_predictors)
+
+# Calculate predicted values on validation set
+Y_pred_val <- X_val %*% mle_params_gradient_descent2
+
+# Calculate residuals
+residuals_val <- Y_val - Y_pred_val
+
+# Calculate Mean Squared Error (MSE)
+mse_val <- mean(residuals_val^2)
+
+# Calculate Mean Absolute Error (MAE)
+mae_val <- mean(abs(residuals_val))
+
+# Calculate Root Mean Squared Error (RMSE)
+rmse_val <- sqrt(mean(residuals_val^2))
+
+# Print the evaluation metrics
+cat("MLE-GD Validation Set Metrics:\n")
+cat("Mean Squared Error (MSE): ", mse_val, "\n")
+cat("Mean Absolute Error (MAE): ", mae_val, "\n")
+cat("Root Mean Squared Error (RMSE): ", rmse_val, "\n")
+
+```
+## 4.4 MOM
+```{r}
+# Define the target variable (dependent variable) and predictor variables (independent variables) for the training set
+Y_train <- train_target
+X_train <- cbind(1, train_predictors)
+
+# Calculate the sample moments for the training set
+m1_train <- colMeans(X_train)
+m2_train <- colMeans(X_train^2)
+m3_train <- colMeans(X_train^3)
+m4_train <- colMeans(X_train^4)
+m5_train <- colMeans(X_train^5)
+
+# Construct the moment matrix for the training set
+moment_matrix_train <- matrix(0, nrow = dim(X_train)[2], ncol = dim(X_train)[2])
+
+# Calculate the first column and row of the moment matrix
+moment_matrix_train[1, 1] <- mean(Y_train)
+moment_matrix_train[2:(dim(X_train)[2]), 1] <- m1_train[-1]
+moment_matrix_train[1, 2:(dim(X_train)[2])] <- m1_train[-1]
+
+# Calculate the rest of the moment matrix
+for (i in 2:dim(X_train)[2]) {
+  for (j in 2:dim(X_train)[2]) {
+    moment_matrix_train[i, j] <- mean((X_train[, i] - m1_train[i]) * (X_train[, j] - m1_train[j]))
+  }
+}
+
+# Create the vector to be solved
+b <- c(mean(Y_train), colSums(Y_train * X_train[, -1]))  # Exclude the intercept column
+
+# Solve for the parameters using OLS for the training set
+parameters_train <- solve(moment_matrix_train, b)
+
+# Display the MOM parameters
+print("MOM estimates:")
+print(parameters_train)
+
+```
+EVALUATE MOM METHOD
+```{r}
+# Calculate predicted values for the validation set using the estimated parameters
+Y_pred_val <- X_val %*% parameters_train
+
+# Calculate evaluation metrics for the validation set 
+mse_val <- mean((validation_target - Y_pred_val)^2)
+mae_val <- mean(abs(validation_target - Y_pred_val))
+rmse_val <- sqrt(mean((validation_target - Y_pred_val)^2))
+
+# Print the evaluation metrics for the validation set
+cat("MOM Validation Set Metrics:\n")
+cat("Mean Squared Error (MSE): ", mse_val, "\n")
+cat("Mean Absolute Error (MAE): ", mae_val, "\n")
+cat("Root Mean Squared Error (RMSE): ", rmse_val, "\n")
+
+```
+## 4.5. MOM optimized by Newton-Graphson 
+```{r}
+# Define the loss function
+loss_function <- function(params, x, y) {
+  y_pred <- x %*% params
+  loss <- sum((y - y_pred)^2)
+  return(loss)
+}
+
+# Define the gradient of the loss function
+gradient <- function(mom_params, x, y) {
+  y_pred <- x %*% mom_params
+  mom_grad <- -2 * t(x) %*% (y - y_pred)
+  return(mom_grad)
+}
+
+# Apply the Newton-Raphson method
+optimize_parameters_NR <- function(x, y, initial_params) {
+  mom_params <- initial_params
+  max_iter <- 100
+  epsilon <- 1e-4
+  iter <- 0
+  while (iter < max_iter) {
+    mom_grad <- gradient(mom_params, x, y)
+    hessian <- 2 * t(x) %*% x
+    update <- solve(hessian) %*% mom_grad
+    mom_params <- mom_params - update
+    if (max(abs(update)) < epsilon) {
+      break
+    }
+    iter <- iter + 1
+  }
+  return(mom_params)
+}
+
+# Use the Newton-Raphson method to optimize parameters
+initial_params <- rep(0, ncol(X_train))
+mom_params_NR <- optimize_parameters_NR(X_train, Y_train, initial_params)
+
+# Display the MOM estimates optimized with Newton-Raphson
+print("MOM estimates (optimized with Newton-Raphson):")
+print(mom_params_NR)
+
+```
+EVALUATE MOM METHOD OPTIMIZED BY NEWTON - GRAPHSON ALGORITHM
+```{r}
+# Calculate predicted values for the validation set using the estimated parameters
+Y_pred_val <- X_val %*% mom_params_NR
+
+# Calculate evaluation metrics for the validation set (e.g., MSE, MAE, RMSE, R-squared)
+mse_val <- mean((validation_target - Y_pred_val)^2)
+mae_val <- mean(abs(validation_target - Y_pred_val))
+rmse_val <- sqrt(mean((validation_target - Y_pred_val)^2))
+R_squared_val <- 1 - sum((validation_target - Y_pred_val)^2) / sum((validation_target - mean(validation_target))^2)
+
+# Print the evaluation metrics for the validation set
+cat("MOM - NR Validation Set Metrics:\n")
+cat("Mean Squared Error (MSE): ", mse_val, "\n")
+cat("Mean Absolute Error (MAE): ", mae_val, "\n")
+cat("Root Mean Squared Error (RMSE): ", rmse_val, "\n")
+cat("R-squared: ", R_squared_val, "\n")
+
+```
+## 4.6 Bayesian estimation
+```{r}
+# Define the log-posterior function
+log_posterior <- function(params, x, y, prior_params) {
+  # Extract parameters
+  beta <- params[-1]
+  sigma <- params[1]
+  nu <- params[1]
+  
+  # Define the log-likelihood function
+  log_likelihood <- sum(dt((y - x %*% beta) / sigma, df = nu, log = TRUE) - log(sigma))
+  
+  # Define the log-prior function
+  log_prior <- sum(dnorm(beta, mean = prior_params$beta_mean, sd = prior_params$beta_sd, log = TRUE)) + dnorm(sigma, mean = prior_params$sigma_mean, sd = prior_params$sigma_sd, log = TRUE) + dgamma(nu, shape = prior_params$nu_shape, rate = prior_params$nu_rate, log = TRUE)
+  
+  # Calculate log-posterior
+  log_posterior <- log_likelihood + log_prior
+  
+  return(log_posterior)
+}
+
+# Define the function for Bayesian estimation using Metropolis-Hastings algorithm
+bayesian_estimation <- function(x, y, prior_params, initial_params, num_iterations) {
+  # Initialize parameters and accepted samples
+  params <- matrix(0, nrow = num_iterations, ncol = length(initial_params))
+  accepted_samples <- 0
+  
+  # Initialize current parameter values
+  current_params <- initial_params
+  
+  # Initialize proposal standard deviations
+  proposal_sds <- c(0.1, rep(0.01, length(current_params) - 1))
+  
+  # Set random seed
+  set.seed(129)
+  
+  # Run Metropolis-Hastings algorithm
+  for (i in 1:num_iterations) {
+    # Propose new parameter values
+    proposed_params <- current_params + rnorm(length(current_params), mean = 0, sd = proposal_sds)
+    
+    # Calculate log-posterior for current and proposed parameters
+    log_posterior_current <- log_posterior(current_params, x, y, prior_params)
+    log_posterior_proposed <- log_posterior(proposed_params, x, y, prior_params)
+    
+    # Check for NaNs in log-posterior
+    if (is.nan(log_posterior_current) || is.nan(log_posterior_proposed)) {
+      cat("Warning: NaN encountered in log-posterior calculation. Skipping iteration ", i, "\n")
+      next
+    }
+    
+    # Calculate acceptance ratio
+    acceptance_ratio <- exp(log_posterior_proposed - log_posterior_current)
+    
+    # Check for NaNs in acceptance ratio
+    if (is.nan(acceptance_ratio)) {
+      cat("Warning: NaN encountered in acceptance ratio calculation. Skipping iteration ", i, "\n")
+      next
+    }
+    
+    # Accept or reject proposal
+    if (runif(1) < acceptance_ratio) {
+      current_params <- proposed_params
+      accepted_samples <- accepted_samples + 1
+    }
+    
+    # Save current parameters
+    params[i, ] <- current_params
+  }
+  
+  # Discard burn-in samples
+  params <- params[(num_iterations * 0.2 + 1):num_iterations, ]
+  
+  # Acceptance rate
+  acceptance_rate <- accepted_samples / num_iterations
+  
+  return(list(params = params, acceptance_rate = acceptance_rate))
+}
+
+# Define prior parameters
+prior_params <- list(beta_mean = rep(0, ncol(X_train) - 1), beta_sd = rep(1, ncol(X_train) - 1), sigma_mean = 1, sigma_sd = 0.5, nu_shape = 2, nu_rate = 1)
+
+# Define initial parameters and number of iterations
+initial_params <- c(1, rep(0, ncol(X_train) - 1), 3)  # Initial value for sigma, betas, and nu
+num_iterations <- 100
+
+# Perform Bayesian estimation
+bayesian_results <- bayesian_estimation(X, Y, prior_params, initial_params, num_iterations)
+
+# Extract parameter estimates
+parameter_estimates<- colMeans(bayesian_results$params)
+bayesian_estimates<- parameter_estimates[1:6]
+
+# Display parameter estimates
+print("Bayesian Parameter Estimates:")
+print(bayesian_estimates)
+
+```
+EVALUATE BAYESIAN ESTIMATION
+```{r}
+# Calculate predicted values for the validation set using the estimated parameters
+Y_pred_val <- X_val %*% bayesian_estimates
+
+# Calculate evaluation metrics for the validation set (e.g., MSE, MAE, RMSE, R-squared)
+mse_val <- mean((validation_target - Y_pred_val)^2)
+mae_val <- mean(abs(validation_target - Y_pred_val))
+rmse_val <- sqrt(mean((validation_target - Y_pred_val)^2))
+
+# Print the evaluation metrics for the validation set
+cat("Bayesian estimate Validation Set Metrics:\n")
+cat("Mean Squared Error (MSE): ", mse_val, "\n")
+cat("Mean Absolute Error (MAE): ", mae_val, "\n")
+cat("Root Mean Squared Error (RMSE): ", rmse_val, "\n")
+
+
+```
+## 4.7 Extra analysis
+
+```{r}
+# Define the predictor variables (independent variables) for training data
+S_train_predictors <- train_data$Previous.Scores
+
+# Define the target variable (dependent variable) for training data
+train_target <- train_data$Performance.Index
+
+# Define the predictor variables (independent variables) for validation data
+S_validation_predictors <- validation_data$Previous.Scores
+
+# Define the target variable (dependent variable) for validation data
+validation_target <- validation_data$Performance.Index
+
+# Convert train_predictors to a numeric matrix for training data
+S_train_predictors <- as.matrix(train_predictors)
+
+# Convert validation_predictors to a numeric matrix for validation data
+S_validation_predictors <- as.matrix(validation_predictors)
+```
+
+### 4.7.1 SLR
+```{r}
+simple_model<-lm(Performance.Index ~ Previous.Scores, data = train_data)
+summary(simple_model)
+```
+EVALUATION MODEL 
+```{r}
+# Predict on validation set
+predictions <- predict(simple_model, newdata = validation_data)
+
+# Calculate evaluation metrics
+mse_val <- mean((predictions - validation_data$Performance.Index)^2)
+mae_val <- mean(abs(predictions - validation_data$Performance.Index))
+rmse_val <- sqrt(mse_val)
+R_squared_val <- summary(simple_model)$r.squared
+
+# Print evaluation metrics
+print("SLR evaluation:")
+cat("Mean Squared Error (MSE): ", mse_val, "\n")
+cat("Mean Absolute Error (MAE): ", mae_val, "\n")
+cat("Root Mean Squared Error (RMSE): ", rmse_val, "\n")
+cat("R-squared: ", R_squared_val, "\n")
+```
+### 4.7.2 MLE - NR (Simple)
+```{r}
+X0 <-cbind(S_train_predictors,1)
+Y0 <-train_target
+
+# Step 1: Define the log-likelihood function
+S_log_likelihood <- function(params, x, y) {
+  # Extract parameters
+  beta0 <- params[1]
+  beta1 <- params[2]
+  
+  # Calculate predicted values
+  y_pred <- beta0 + beta1*x[,1] 
+  
+  # Calculate residuals
+  residuals <- y - y_pred
+  
+  # Calculate log-likelihood (assuming Gaussian errors)
+  log_likelihood <- sum(dnorm(residuals, mean = 0, sd = sd(residuals), log = TRUE))
+  
+  return(log_likelihood)
+}
+
+# Step 2:  Define the gradient of the log-likelihood function
+S_grad_log_likelihood <- function(params, x, y) {
+  # Extract parameters
+  beta0 <- params[1]
+  beta1 <- params[2]
+  
+  # Calculate predicted values
+  y_pred <- beta0 + beta1*x[,1] 
+  
+  # Calculate residuals
+  residuals <- y - y_pred
+  
+  # Calculate gradient
+  grad <- colSums(residuals * x)
+  
+  return(grad)
+}
+
+# Step 3: Define the Hessian matrix of the log-likelihood function
+S_hessian_log_likelihood <- function(params, x, y) {
+  # Extract parameters
+  beta0 <- params[1]
+  beta1 <- params[2]
+  
+  # Calculate predicted values
+  y_pred <- beta0 + beta1*x[,1] 
+  
+  # Calculate residuals
+  residuals <- y - y_pred
+  
+  # Calculate Hessian matrix
+  hessian <- t(x) %*% diag(residuals^2) %*% x
+  
+  return(hessian)
+}
+
+# Step 4: Define the Newton-Raphson optimization function
+S_newton_raphson <- function(params, x, y) {
+  # Define a small value for convergence criterion
+  epsilon <- 1e-6
+  
+  # Maximum number of iterations
+  max_iter <- 100
+  
+  # Initialize parameters and iteration counter
+  params_old <- params
+  iter <- 0
+  
+  # Iterate until convergence
+  while (iter < max_iter) {
+    # Update iteration counter
+    iter <- iter + 1
+    
+    # Calculate gradient and Hessian matrix
+    grad <- S_grad_log_likelihood(params_old, x, y)
+    hessian <- S_hessian_log_likelihood(params_old, x, y)
+    
+    # Calculate parameter update using Newton-Raphson formula
+    params_new <- params_old - solve(hessian) %*% grad
+    
+    # Check convergence
+    if (max(abs(params_new - params_old)) < epsilon) {
+      break
+    }
+    
+    # Update parameters for next iteration
+    params_old <- params_new
+  }
+  
+  return(params_new)
+}
+
+# Step 5: Estimate the Parameters using Newton-Raphson
+initial_params <- rep(0, 2)  # Initialize parameters
+S_mle_params_newton <- S_newton_raphson(initial_params, x = X0, y = Y0)
+
+# Display the MLE parameters
+print("Maximum Likelihood Estimates (Newton-Raphson):")
+print(S_mle_params_newton)
+
+```
+EVALUATE MLE_NR ON VALIDATION SET
+```{r}
+# Define the validation set
+Y_val <- validation_target
+X_val <- cbind(1, S_validation_predictors)
+
+# Calculate predicted values on validation set
+Y_pred_val <- X_val %*% S_mle_params_newton
+
+# Calculate residuals
+residuals_val <- Y_val - Y_pred_val
+
+# Calculate Mean Squared Error (MSE)
+mse_val <- mean(residuals_val^2)
+
+# Calculate Mean Absolute Error (MAE)
+mae_val <- mean(abs(residuals_val))
+
+# Calculate Root Mean Squared Error (RMSE)
+rmse_val <- sqrt(mean(residuals_val^2))
+
+# Calculate R-squared
+SST_val <- sum((Y_val - mean(Y_val))^2)
+SSR_val <- sum(residuals_val^2)
+R_squared_val <- 1 - SSR_val / SST_val
+
+# Print the evaluation metrics
+cat("(Simple) MLE-NR Validation Set Metrics:\n")
+cat("Mean Squared Error (MSE): ", mse_val, "\n")
+cat("Mean Absolute Error (MAE): ", mae_val, "\n")
+cat("Root Mean Squared Error (RMSE): ", rmse_val, "\n")
+cat("R-squared: ", R_squared_val, "\n")
+
+```
+### 4.7.3 MOM - NR (Simple)
+```{r}
+Y3 <-train_target
+X3 <- cbind(1, S_train_predictors)
+
+# Define the loss function
+S_ss_function <- function(params, x, y) {
+  y_pred <- x %*% params
+  loss <- sum((y - y_pred)^2)
+  return(loss)
+}
+
+# Define the gradient of the loss function
+S_gradient <- function(mom_params, x, y) {
+  y_pred <- x %*% mom_params
+  mom_grad <- -2 * t(x) %*% (y - y_pred)
+  return(mom_grad)
+}
+
+# Apply the Newton-Raphson method
+S_optimize_parameters_NR <- function(x, y, initial_params) {
+  mom_params <- initial_params
+  max_iter <- 100
+  epsilon <- 1e-4
+  iter <- 0
+  while (iter < max_iter) {
+    mom_grad <- gradient(mom_params, x, y)
+    hessian <- 2 * t(x) %*% x
+    update <- solve(hessian) %*% mom_grad
+    mom_params <- mom_params - update
+    if (max(abs(update)) < epsilon) {
+      break
+    }
+    iter <- iter + 1
+  }
+  return(mom_params)
+}
+
+# Use the Newton-Raphson method to optimize parameters
+initial_params <- rep(0, ncol(X3))
+S_mom_params_NR <- S_optimize_parameters_NR(X3, Y3, initial_params)
+
+# Display the MOM estimates optimized with Newton-Raphson
+print("(Simple) MOM estimates (optimized with Newton-Raphson):")
+print(S_mom_params_NR)
+
+```
+```{r}
+# Calculate predicted values for the validation set using the estimated parameters
+Y_pred_val <- X_val %*% S_mom_params_NR
+
+# Calculate evaluation metrics for the validation set (e.g., MSE, MAE, RMSE, R-squared)
+mse_val <- mean((validation_target - Y_pred_val)^2)
+mae_val <- mean(abs(validation_target - Y_pred_val))
+rmse_val <- sqrt(mean((validation_target - Y_pred_val)^2))
+R_squared_val <- 1 - sum((validation_target - Y_pred_val)^2) / sum((validation_target - mean(validation_target))^2)
+
+# Print the evaluation metrics for the validation set
+cat("(Simple) MOM - NR Validation Set Metrics:\n")
+cat("Mean Squared Error (MSE): ", mse_val, "\n")
+cat("Mean Absolute Error (MAE): ", mae_val, "\n")
+cat("Root Mean Squared Error (RMSE): ", rmse_val, "\n")
+cat("R-squared: ", R_squared_val, "\n")
+
+```
+
+
+
+
+
+

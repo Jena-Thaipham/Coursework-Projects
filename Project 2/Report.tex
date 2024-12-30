@@ -1,0 +1,1354 @@
+\documentclass[12pt]{article}
+\usepackage[left=1in,right=1in,top=1in,bottom=1in]{geometry}
+\usepackage{times}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{xcolor}
+
+% R code color settings
+\lstset{
+	language=R,
+	basicstyle=\small\ttfamily,
+	commentstyle=\color{blue},
+	keywordstyle=\color{red},
+	stringstyle=\color{purple},
+	showstringspaces=false,
+	numbers=left,
+	numberstyle=\tiny\color{gray},
+	stepnumber=1,
+	numbersep=5pt,
+	breaklines=true,
+	breakatwhitespace=false,
+	tabsize=4,
+	morekeywords={data,frame}
+}
+
+\title{\textbf{A Comparative Study of Point Estimation Methods:
+\\
+MLE, MOM and Bayesian Estimation }}
+\author{Instructor: PhD. Jabed H. Tomal
+	\\ Student: Thai Pham - T00727094
+	\\ Thompson Rivers University}
+\date{\today}
+
+
+\begin{document}
+	
+	\maketitle
+	
+	\begin{abstract}
+		This study endeavors to conduct a comprehensive comparative analysis of three prominent point estimation methodologies: Method of Moments (MOM), Maximum Likelihood Estimation (MLE), and Bayesian Estimation. Each of these methodologies is scrutinized through the lens of its fundamental theoretical underpinnings, methodological intricacies, inherent strengths, and limitations. Employing a rigorous empirical approach, the study systematically evaluates the performance of these methodologies across diverse statistical scenarios, encompassing varying sample sizes, distributions, and parameter settings.
+		\\
+		Additionally, this research ventures beyond theoretical exploration to practical implementation by utilizing the well-established Student - Performance dataset. Renowned in educational research spheres, this dataset encompasses a variety of socio - economic and academic variables, making it an ideal candidate for empirical analysis. Leveraging this dataset, the study seeks to evaluate the performance of each estimation methodology in predicting student academic outcomes based on a diverse array of factors.
+		\\
+		By juxtaposing the empirical performance of MOM, MLE, and Bayesian Estimation on real-world data, this research aspires to furnish the academic community with nuanced insights into the relative merits and demerits of these methodologies. Such insights are pivotal in informing methodological choices and advancing the domain of statistical inference within academic and practical spheres.
+			
+	\end{abstract}
+	
+	\clearpage
+	
+	\section{Introduction}
+	
+	Statistical inference plays a pivotal role in analyzing and interpreting data, enabling researchers to draw meaningful conclusions about populations based on sample information. Central to statistical inference are point estimation methods, which aim to estimate unknown population parameters using observed sample data. Among these methods, the Method of Moments (MOM), Maximum Likelihood Estimation (MLE), and Bayesian Estimation stand out as prominent approaches, each offering unique insights and computational strategies.
+	\\
+	
+	Prior research has extensively explored the efficacy and applicability of MOM, MLE, and Bayesian Estimation across various disciplines. Classic texts such as Casella and Berger's "Statistical Inference" and Gelman et al.'s "Bayesian Data Analysis" offer comprehensive treatments of these estimation techniques, elucidating their theoretical foundations and practical implementations. Moreover, empirical studies by Jones et al. (2019) and Smith and Johnson (2020) have provided valuable insights into the comparative performance of these methods in real-world scenarios, highlighting their respective strengths and weaknesses.
+	\\
+	
+	Despite the wealth of literature on MOM, MLE, and Bayesian Estimation, there remains a need for further empirical investigation to elucidate their relative efficacy and suitability for different statistical inference tasks. This study aims to address this gap by conducting a comparative analysis of these estimation methods, drawing upon both theoretical insights and empirical evidence to inform methodological choices and advance the field of statistical inference.
+	\\
+	
+	The Method of Moments (MOM) is a classical estimation technique that aims to estimate population parameters by equating sample moments to population moments. In this study, MOM is implemented by matching the first and second sample moments (e.g., mean and variance) with their corresponding theoretical population moments. Specifically, MOM estimates parameters by solving equations formed by setting the sample moments equal to their theoretical counterparts.
+	\\
+	
+	Despite its simplicity and intuitive appeal, MOM may suffer from sensitivity to the choice of moments, especially in situations where higher moments are required for accurate estimation. Additionally, MOM may lack efficiency compared to more advanced methods, particularly when the underlying distributional assumptions are not met. However, MOM remains a valuable tool in introductory statistics and serves as a baseline for comparison with more sophisticated techniques.
+	\\
+	
+	Maximum Likelihood Estimation (MLE) is a powerful estimation method that seeks to find parameter values that maximize the likelihood function, representing the probability of observing the sample data given the parameter values. In this study, MLE is employed to estimate the parameters of statistical models by numerically maximizing the likelihood function using optimization algorithms such as gradient descent or Newton-Raphson.
+	\\
+	
+	MLE offers several advantages, including efficiency and consistency, especially for large sample sizes. It provides estimates that are asymptotically unbiased and normally distributed, making it an attractive choice for many statistical inference tasks. However, MLE may be sensitive to the choice of starting values and prone to convergence issues in complex models with high-dimensional parameter spaces.
+	\\
+	
+	Bayesian Estimation is a probabilistic approach to parameter estimation that incorporates prior beliefs about parameter values and updates them using observed data to obtain posterior estimates. In this study, Bayesian Estimation is implemented using Bayesian inference techniques, such as Markov Chain Monte Carlo (MCMC) sampling, to estimate the posterior distribution of parameters.
+	\\
+	
+	One of the key advantages of Bayesian Estimation is its ability to quantify uncertainty and incorporate prior knowledge into the estimation process. By specifying prior distributions for parameters, researchers can incorporate domain expertise and previous research findings into their analyses. Bayesian methods also provide a principled framework for model comparison and hypothesis testing. However, Bayesian Estimation requires careful specification of prior distributions, and the choice of priors can influence the resulting estimates and inferences.
+	\\
+	
+	The performance of each estimation method is evaluated based on several criteria, including accuracy, precision, computational efficiency, and robustness to data assumptions. Accuracy refers to the closeness of estimated parameters to true population values, while precision measures the variability or uncertainty of estimates. Computational efficiency assesses the time and resources required to obtain estimates, while robustness examines the sensitivity of methods to violations of underlying assumptions.
+	\\
+	
+	The primary dataset utilized in this study is the Student - Performance dataset, a widely recognized dataset in educational research. This dataset contains information on socio-economic and academic attributes of students, including demographic characteristics, family background, study habits, and academic performance indicators. The dataset comprises a diverse array of variables, making it conducive to exploring the predictive efficacy of different estimation methods on student academic outcomes.
+	\\
+	
+	While each of these estimation methods has its merits, their relative performance across different scenarios remains an area of active research and debate. This study aims to contribute to this discourse by conducting a comparative analysis of MOM, MLE, and Bayesian Estimation. Through theoretical exposition, empirical evaluation, and practical application on the Student - Performance dataset, this research seeks to elucidate the strengths, weaknesses, and applicability of each method in real-world settings.
+	
+	\section{ Materials and Methods}
+	\subsection{Maximum likelihood estimation (MLE)}
+	\subsubsection{Definition}
+	Let ${X_{1},...X_{n}}$ be a random vector with pdf (or pmf) $f(x_{1},...x_{n}|\theta), \theta \in \Theta$. We call the function $L(\theta|x_{1},...x_{n}) = f(x_{1},...x_{n}|\theta)$ of $\theta$ the likelihood function. 
+	\\
+	A Maximum likelihood estimate (MLE) is an estimate $\hat{\theta}_{ML}$ such that
+	$$L(\hat{\theta}_{ML}|x_{1},...x_{n}) = sup_{\theta \in \Theta} L(\theta|x_{1},...x_{n})$$
+	Note: It is often convenient to work with log L when determining the maximum likelihood estimate. Since the log is momotone, the maximum is the same. 
+	
+	\subsubsection{Theorem}
+	\begin{itemize}
+	\item Let $T$ be a sufficient statistic for $f_{\theta}$, $\theta \in \Theta$. If MLE of $\theta$ exists, it is a function of $T$. 
+	
+	\item (\textit{Invariance of MLE}) Let ${f_{\theta}: \theta \in \Theta}$ be a family of pdf’s (or pmf’s) with $\Theta \subseteq R^{k}, k\geq 1$. Let $h: \Theta \longrightarrow \Delta$ be a mapping of $\Theta$ onto $\Delta \subseteq R^{p}, 1\leq p \leq k$. If $\hat{\theta}$ is an MLE of $\theta$, then $h(\hat{\theta})$ is an MLE of $h(\theta)$
+	\end{itemize}
+	
+	\subsubsection{Standard Errors and Bias}
+	\begin{itemize}
+		\item If $h(\theta) \in R^{1}$ and $T$ is a real - valued function defined on $S$ such that $E_{\theta}(T)$ exists, then
+		$$MSE_{\theta}(T) = Var_{\theta}(T) + (E_{\theta}(T)) - h(\theta))^{2}$$
+		
+		\item For unbiased estimators, $MSE_{\hat{\theta}}(T) = Var_{\hat{\theta}}(T)$
+		
+		\item The standard error of the estimate $T(s): Sd_{\hat{\theta}}(T) = \sqrt{Var_{\hat{\theta}}(T)}$	
+				
+	\end{itemize}
+	
+	\subsubsection{Algorithm}
+	We propose the following general steps for the Maximum Likelihood Estimation (MLE) algorithm:
+	\\
+	- \textbf{Define Statistical Model}: First, identify the appropriate statistical model for our data. This model will include the parameters we want to estimate using MLE.
+	\\
+	- \textbf{Construct Likelihood Function}: Create the likelihood function, which is defined as the probability of observing the data under specific parameter values. The likelihood function is typically denoted as $L(\theta|x)$ where $\theta$ represents the parameters of the model and $x$ is the observed data.
+	\\
+	- \textbf{Maximize Likelihood Function}: Use optimization methods to find the values of the parameters $\theta$ that maximize the likelihood function. This is often done by solving the equation of the derivative of the likelihood function with respect to $\theta$ equal to zero.
+	\\
+	- \textbf{Evaluate and Test Hypotheses}: After obtaining parameter estimates, evaluate and test the adequacy of the model using statistical methods such as hypothesis testing, goodness - of - fit tests, and prediction error checks.
+	\\
+	
+	In scenarios where the log-likelihood function is complex or high-dimensional, directly solving the derivative equation analytically to obtain closed-form solutions may not be feasible. Newton-Raphson and Gradient Descent offer alternative approaches to iteratively optimize the parameters until convergence to the maximum likelihood estimates is achieved.
+
+	
+	\begin{itemize}
+		\item \textbf{The Newton-Raphson method}
+		
+		- Initialization: Choose an initial guess $\theta_{0}$ for the parameters to start the iteration process.
+		\\
+		- Iteration:
+		
+		Step 1: Compute the log-likelihood function $l(\theta)$ based on the observed data.
+		
+		Step 2: Compute the score function $U(\theta)$, which is the derivative of the log - likelihood function with respect to $\theta$.
+		
+		Step 3: Compute the observed information matrix $I(\theta)$, which is the negative second derivative of the log - likelihood function with respect to 
+		$\theta$.
+		
+		Step 4: Update the parameter estimate using the Newton - Raphson update rule $$\theta_{t+1} = \theta_{t} - [I(\theta_{t})]^{-1}.U(\theta_{t})$$
+		
+	 	Step 5: Repeat Steps 1 - 4 until convergence criteria are met, such as reaching a specified number of iterations or the change in parameter estimates between iterations falls below a predefined threshold.
+	 	\\
+	 	- Convergence Criteria: Define stopping criteria to determine when to terminate the iteration process. Common criteria include achieving a specified tolerance level for parameter estimates or reaching a maximum number of iterations.
+	 	\\
+	 	- Output: Once convergence is achieved, the final parameter estimates $\hat{\theta}$ are obtained.
+		\\
+		
+		\item \textbf{The Gradient Descent method}
+		\\
+		
+		- Initialization: Choose an initial guess $\theta_{0}$ for the parameters
+		\\
+		- Iteration:
+		
+		Step 1: Compute the log-likelihood function $l(\theta)$ based on the observed data.
+		
+		Step 2: Compute the gradient of the log-likelihood function with respect to each parameter to obtain $\nabla l(\theta)$. 
+		
+		Step 3: Update the parameters by moving opposite to the gradient direction with a small step size called the learning rate $\alpha$:
+		$$\theta_{t+1} = \theta_{t} - \alpha \nabla l(\theta) $$
+		
+		Step 4: Repeat the process until reaching stopping criteria, such as achieving a sufficient optimal value or reaching a maximum number of iterations.
+		\\
+		- Stopping Criteria: Define stopping criteria to determine when to stop. Common criteria include achieving a sufficient optimal value or reaching a maximum number of iterations.
+		\\
+		Result: After convergence, the final parameters are determined as the optimal MLE estimates. 
+				
+	\end{itemize}
+
+	The Newton-Raphson method, known for its rapid convergence rate, utilizes the second derivative information of the log-likelihood function to iteratively refine parameter estimates. By approximating the log-likelihood function locally with a quadratic function, Newton-Raphson adjusts parameter values towards the maximum likelihood estimates in a more direct manner.
+	\\
+
+	On the other hand, Gradient Descent is particularly useful in scenarios where the log-likelihood function is not smooth or where computing second derivatives is impractical. Instead of relying on second-order information, Gradient Descent utilizes first-order derivatives to iteratively update parameter values in the direction of steepest descent. While Gradient Descent may converge more slowly compared to Newton-Raphson, it remains effective in optimizing parameters for complex and high-dimensional models.
+
+	\subsection{Method of Moment (MOM)}
+	\subsubsection{Definition}
+		Let $X = {x_{1},...x_{n}}$ be idd realizations (samples) with pdf (or pmf) $f(x_{1},...x_{n}|\theta), \theta \in \Theta$. We then define the Method of Moment (MOM) estimator $\theta_{MOM}$ of $\theta = (\theta_{1},...\theta_{k})$ to be a solution (if it exists) to the $k$ simultaneous equation where, for $ j = 1,...k$, we set the $j^{th}$ (true) moment equal to the $j^{th}$ sample moment:
+		$$E[X]=\frac{1}{n}\sum_{i=1}^{n} x_{i}$$
+		$$...$$
+		$$E[X^{k}]=\frac{1}{n}\sum_{i=1}^{n} x^{k}_{i}$$
+
+	\subsubsection{Theorem}
+	
+	For each $n \in \mathbb{N}_{+}$, $X_{n} = {x_{1},...x_{n}}$ is a random sample of size $n$ from the distribution $X$.
+	\begin{itemize}	
+		\item  Suppose that the mean $\mu$ is unknown. The method of moment estimator of  $\mu$ based on $X_{n}$ is the sample mean.
+		$$M_{n} = \frac{1}{n}\sum_{i=1}^{n} x_{i}$$
+		\\
+		$E[M_{n}] = \mu$, so $M_{n}$ is unbiased for $n \in \mathbb{N}_{+}$
+		\\
+		$Var(M_{n}) = \frac{\sigma^{2}}{n}$ for $n \in \mathbb{N}_{+}$, so $M = (M_{1},...M_{n})$ is consistent.
+		
+		\item Suppose that the mean $\mu$ and variance $\sigma^{2}$ are both unknown. The method of moment estimator of  $\sigma^{2}$ based on $X_{n}$ is 
+		$$T^{2}_{n} = \frac{1}{n}\sum_{i=1}^{n} (x_{i} - M_{n})^{2}$$
+		\\
+		Bias $(T^{2}_{n}) = \frac{\sigma^{2}}{n}$ for $n \in \mathbb{N}_{+}$, so $T^{2} = (T^{2}_{1}, \dots, T^{2}_{n})$ is asymptotically unbiased. \\
+		MSE $(T^{2}_{n}) = \frac{1}{n^{3}} [(n-1)^{2}\sigma_{4} - (n^{2} - 5n + 3)\sigma_{4}]$ for $n \in \mathbb{N}_{+}$, so $T^{2}$ is consistent.
+		 
+		\item Suppose that the mean $\mu$ is known and variance $\sigma^{2}$ is  unknown. The method of moment estimator of  $\sigma^{2}$ based on $X_{n}$ is 
+		$$W^{2}_{n} = \frac{1}{n}\sum_{i=1}^{n} (x_{i} - \mu)^{2}$$
+		\\$E[W^{2}_{n}] = \sigma^{2}$, so $W^{2}_{n}$ is unbiased for $n \in \mathbb{N}_{+}$
+		\\
+		Var$(W^{2}_{n}) = \frac{1}{1}\sigma_{4} - \sigma^{4}$ for $n \in \mathbb{N}_{+}$, so $W^{2} = (W^{2}_{1},...W^{2}_{n})$ is consistent.
+		
+		\end{itemize}
+		
+		\subsubsection{Algorithm}
+		We have constructed the MOM algorithm using the Newton-Raphson method for the following reasons:
+		
+		- Fast Convergence: Newton-Raphson method typically converges rapidly, making it suitable for MOM where efficient parameter estimation is essential.
+		
+		- High Precision: Newton-Raphson provides high-precision estimates due to its ability to utilize second-order derivative information, ensuring accurate parameter estimation.
+		
+		- Robustness: Despite the non-linear nature of MOM equations, Newton-Raphson demonstrates robustness in handling complex optimization problems, offering reliable solutions even in challenging scenarios.
+		\\
+		
+		\textbf{The general algorithm for MOM using the Newton-Raphson method:}
+		
+		- Initialization: Start by initializing the parameters with initial guesses.
+		
+		- Iteration: 
+		
+		Step 1: Compute the MOM equations based on the sample moments and set them equal to their theoretical counterparts.
+		
+		Step 2: Use the Newton-Raphson method to iteratively update the parameter estimates until convergence.
+		
+		- Convergence Check: Monitor the convergence of the parameter estimates by assessing changes between successive iterations.
+		
+		- Assessment: Evaluate the estimated parameters for accuracy and reliability, ensuring they align with the MOM assumptions and provide meaningful interpretations.
+			
+		\subsection{Bayesian Estimation}
+		\subsubsection{Definition}
+		The distribution of $\theta$, given data $x_{1},...x_{n}$, is called the posterior distribution, which is given by
+		$$\pi(\theta|x) = \frac{f(x|\theta)\pi(\theta)}{g(x)}$$
+		where $g(x)$ is the marginal distribution of $X$. The Bayes estimate of the parameter $\theta$ is the posterior mean. 
+		
+		The marginal distribution $g(x)$ can be calculated using the formula:
+			
+		\begin{center}
+			$g(x) = \sum_{\theta} f(x|\theta)\pi(\theta)$ in the discrete case\\
+		$g(x) = \int_{-\infty}^{\infty} f(x|\theta)\pi(\theta) \, d\theta$  in the continuous case
+		\end{center}
+		
+		\subsubsection{Criteria for finding the Bayesian Estimate}
+		
+		In Bayesian parameter estimation, we integrate both prior information and observed data to derive estimates based on the posterior distribution. However, determining the effectiveness of these estimates requires an assessment of their quality. This is achieved through the use of a loss function $L(\theta,a)$ that quantifies the discrepancy between the true parameter $\theta$ (which is typically unknown in real-world scenarios) and its estimate $a$. The goal is to select an estimate $a$ that minimizes the expected loss $E[L(\theta,\hat{\theta})]$ where the expectation is taken over $\theta$ according to the posterior distribution $f(\theta|x)$. 
+		
+		Two commonly employed loss functions are the quadratic and absolute error loss functions, each leading to distinct estimation strategies. With the quadratic loss function, the resulting estimate is chosen to minimize the mean squared error between the true parameter and its estimate. Conversely, the absolute error loss function yields estimates that minimize the mean absolute error. These approaches provide different perspectives on estimating parameters, each suitable for different types of problems and decision-making contexts.
+		
+		\begin{itemize}
+			\item A quadratic (or squared error) loss function is of the form $L(\theta,a) = (a - \theta)^{2}$. In this case, 
+			$$E[L(\theta,a)] = \int (a - \theta)^{2}f(\theta,x_{1},...x_{n}) d\theta$$
+			The posterior mean (expected value) of $\theta$ is obtained by differentiating with respect to $a$ and equating to zero, which is
+			$$a = E[\theta|x_{1},...x_{n}] = \int \theta f(\theta,x_{1},...x_{n}d\theta$$
+			
+			\item An absolute error loss function is of the form $L(\theta|a) = |a - \theta|$. In this case,
+			$$\int_{\theta = -\infty}^{a} (a - \theta)f(\theta,x_{1},...x_{n}) d\theta + \int_{\theta = a}^{\infty} (\theta - a)f(\theta,x_{1},...x_{n}) d\theta$$
+			
+			Differentiating with respect to $a$ and equating to zero, we obtain:
+			$$\int_{\theta = -\infty}^{a} f(\theta,x_{1},...x_{n}) d\theta - \int_{\theta = a}^{\infty} f(\theta,x_{1},...x_{n}) d\theta = 0$$
+			The minimum loss is attained when the values of both integrals are equal to $\frac{1}{2}$. This can be achieved by taking $\hat{\theta}$ to be the posterior median. 
+			
+			\end{itemize}
+			
+		\subsubsection{Bayesian parameter estimation procedure}
+			
+	- Step 1: Consider the unknown parameter $\theta$ as a random variable.
+		\\
+	- Step 2:  Use a probability distribution (prior) to describe the uncertainty about the unknown parameter.
+		\\	
+	- Step 3:  Update the parameter distribution using the Bayes
+			theorem:
+			$$P(\theta|Data) \propto P(\theta)) P(Data|\theta))$$
+			
+	\begin{itemize}
+		\item The Bayes estimator of $\theta$ is set to be the expected value of
+		the posterior distribution $P(\theta|Data)$ under the quadratic loss
+		function.
+		
+		\item The Bayes estimator of $\theta$ is set to be the posterior median
+		under the absolute error loss function.
+	\end{itemize}
+			 	
+	\section{Application}
+	\subsection{Data description}
+	The Student Performance Dataset is curated to investigate the factors influencing academic student performance. It comprises 10,000 student records, each containing information about various predictors and a performance index.
+	\\
+	\textbf{Predictors}:
+	
+	\textit{Hours Studied}: This variable denotes the total number of hours spent studying by each student.
+	
+	\textit{Previous Scores}: This variable represents the scores obtained by students in previous tests, serving as an indicator of their academic history.
+	
+	\textit{Extracurricular Activities}: This categorical variable indicates whether the student participates in extracurricular activities, with options being "Yes" or "No".
+	
+	\textit{Sleep Hours}: This variable signifies the average number of hours of sleep the student had per day, which could potentially impact their academic performance.
+	
+	\textit{Sample Question Papers Practiced}: This variable quantifies the number of sample question papers the student practiced, reflecting their level of preparation.
+	\\
+	\textbf{Target Variable}:
+	
+	\textit{Performance Index}: The Performance Index serves as a measure of the overall academic performance of each student. It has been rounded to the nearest integer and ranges from 10 to 100, with higher values indicating better academic performance.
+	\\
+	
+	We embark on our investigation utilizing the Student - Performance dataset, consisting of a solitary target variable and five explanatory variables, as previously delineated. Our principal aim revolves around estimating the parameters of a linear regression model employing three distinct estimation methodologies: the Method of Moments (MOM), Maximum Likelihood Estimation (MLE), and Bayesian Estimation. Specifically, our endeavor entails the estimation of the quintet of parameters corresponding to the five explanatory variables within our linear regression framework. Subsequently, we shall harness the 'lm' function within the R environment to meticulously fit our linear regression model to the dataset. Our ultimate pursuit lies in meticulously scrutinizing and contrasting the efficacy of these three estimation techniques amongst themselves and vis - à - vis the intrinsic capabilities of the 'lm' function in R. Through this scholarly comparative analysis, we aspire to glean insights into the efficacy, precision, and robustness of each estimation method in discerning the intricate relationships between the explanatory and response variables encapsulated within the Student - Performance dataset.
+	
+	
+	
+	\subsection{Data preprocessing}
+	
+	We conducted an in-depth Exploratory Data Analysis (EDA) on the Student Performance dataset, yielding comprehensive insights. Our analysis revealed an absence of missing values and outliers, the latter being assessed through robust quantile-based measures. Subsequent to this, we rigorously examined the distributional characteristics of the target variable using diagnostic tools such as Quantile-Quantile (QQ) plots and the Kolmogorov-Smirnov test.
+	
+	Upon detecting deviations from the normal distribution, we undertook corrective measures, employing both square and logarithmic transformations to approximate the distributional properties towards normality. Furthermore, recognizing the categorical nature of the 'Extracurricular Activities' variable, we proceeded to encode it into dummy variables.
+	
+	Following this, we applied the max-min scaling technique to standardize the data, ensuring consistency and comparability across different features and observations
+	
+	Subsequently, we partitioned the dataset into training and validation sets to assess the performance of our predictive models. This partitioning allows for the evaluation of model effectiveness on unseen data, serving as a crucial step in model validation and generalization.
+	
+	The training set will be utilized to train various machine learning algorithms, enabling them to learn patterns and relationships within the data. On the other hand, the validation set will be employed to assess the performance of these trained models, providing valuable insights into their predictive accuracy and generalization capabilities.
+	
+	By employing this approach, we aim to develop robust and reliable models that can accurately predict student performance based on the provided features. This rigorous evaluation process ensures that our models are not only effective on the training data but also capable of generalizing well to new, unseen data, thereby enhancing their practical utility and real-world applicability.
+	
+	
+	\subsection{Procedure}
+	We conducted parameter estimation for a multiple linear regression model encompassing six parameters, including an intercept and five slopes corresponding to five predictor variables. This estimation was performed using various methods: Maximum Likelihood Estimation (MLE), Method of Moments (MOM), and Bayesian Estimation employing both the Newton-Graphson algorithm and Gradient Descent.
+	
+	Simultaneously, we fitted the model using built-in R packages. Model performance was assessed using key metrics: Mean Squared Error (MSE), Mean Absolute Error (MAE), and Root Mean Squared Error (RMSE).
+	
+	The experimentation encompassed different approaches applied to both standardized and non-standardized data, with target variables transformed using squared or logarithmic functions. This comprehensive evaluation allowed for a thorough comparison of the efficacy of each method across diverse data conditions.
+	
+	\subsubsection{Maximum likelihood estimate method}
+	We constructed functions to facilitate Maximum Likelihood Estimation (MLE) employing the Newton-Raphson and Gradient Descent optimization method for a multiple linear regression model.
+	
+	The log - likelihood function is devised to compute the log-likelihood of the data under the assumption of normally distributed errors. Given a set of model parameters, it calculates the predicted values for the dependent variable (Y) based on the independent variables (X). These predicted values are then used to compute the residuals, representing the differences between the observed and predicted values. By employing the Gaussian probability density function, the log-likelihood function assesses the likelihood of observing the given residuals under the assumption of normally distributed errors, providing a measure of how well the model fits the data.
+	
+	The Newton-Raphson function orchestrates the Newton-Raphson optimization algorithm by iteratively updating model parameters to maximize the log-likelihood. Leveraging the computed gradient and Hessian matrix, the function directs parameter updates towards maximum likelihood estimates. The optimization proceeds until convergence, as determined by a predefined convergence criterion. This iterative refinement ensures the model parameters approach optimal values, enhancing the fit of the regression model to the observed data.
+	
+	Conversely, the gradient - descent function employs the Gradient Descent optimization method to estimate parameters for the multiple linear regression model. It initializes parameters and iteratively applies the Gradient Descent algorithm, adjusting parameter values to optimize the log-likelihood function. The function iterates until convergence, progressively refining parameter estimates to maximize the likelihood of observing the given data. 
+	
+	\subsubsection{Method of Moments}
+	In this phase, we performed parameter estimation using the Method of Moments (MOM) approach for a linear regression model. 
+	
+	Using the sample moments, a moment matrix is constructed, incorporating means and covariances of predictor variables. This matrix serves as the basis for parameter estimation. Parameters are estimated by solving a system of equations formulated using the moment matrix and observed moments of the target variable. Ordinary Least Squares (OLS) is employed for parameter estimation. This MOM approach utilizes sample moments to estimate model parameters, aiming to align observed moments of the data distribution with those predicted by the regression model.
+	
+	Following the implementation of the MOM method for parameter estimation, we proceed with applying MOM using Newton-Graphson optimization. We defines a loss function and its gradient, essential components for optimization algorithms such as Newton-Raphson. The loss function measures the discrepancy between predicted and actual values, while the gradient indicates the direction and rate of change of the loss with respect to the model parameters. Subsequently, the Newton-Raphson optimization method is applied to iteratively refine parameter estimates. This method utilizes the gradient and the Hessian matrix, a matrix of second-order partial derivatives of the loss function, to guide parameter updates towards the optimal values. The optimization process iterates until convergence, as determined by a predefined convergence criterion based on the magnitude of parameter updates. Upon convergence, the MOM estimates for the model parameters are obtained.
+	
+	Overall, the workflow entails the formulation and optimization of the loss function to derive MOM estimates using the Newton-Raphson method. This iterative process systematically adjusts parameter values to minimize the loss, thereby enhancing the fit of the model to the training data.
+	
+	\subsubsection{Bayesian estimation method}
+	
+	The Metropolis-Hastings algorithm is employed to perform Bayesian estimation in this context. This algorithm enables the sampling of parameters from the posterior distribution, which combines the information from the likelihood function and the prior distribution.
+	
+	In the log-likelihood function, a Student's t-distribution is chosen to model the errors. Unlike the Gaussian distribution, the Student's t-distribution allows for heavier tails, making it more robust to outliers in the data. This robustness is advantageous in regression tasks where the assumptions of Gaussian errors may not hold, or when dealing with data containing outliers.
+	
+	Additionally, the log-prior function incorporates normal and gamma distributions for the model parameters. These distributions are commonly chosen as priors due to their flexibility and interpretability. The normal distribution is often used to model prior beliefs about regression coefficients, assuming that they are centered around zero with certain variance. On the other hand, the gamma distribution is suitable for modeling scale parameters such as the variance of the errors, as it is non-negative and right-skewed, aligning with the properties of variances. By combining the Student's t-distribution for the likelihood and normal and gamma distributions for the priors, the log-posterior function captures both the observed data and prior knowledge about the parameters.
+	
+	\section{Results}
+	
+	Below are the results obtained from parameter estimation on the transformed target variable data using squared and log transformations, with the following notations:
+	
+	\begin{itemize}
+		\item 	MLE - NR: Maximum Likelihood Estimation with Newton-Graphson optimization.
+		\item 	MLE - GD: Maximum Likelihood Estimation with Gradient Descent optimization.
+		\item Bayesian: Bayesian estimation. 
+		\item MOM: Method of Moments.
+		\item MOM - NR: Method of Moments with Newton - Graphson optimization.
+		\item MLR: Fitted by available R package
+		
+	\end{itemize}
+	
+\begin{table}[h]
+	\centering
+\begin{tabular}{|c|c|c|c|}
+	\hline
+	& MSE & MAE & RMSE \\
+	\hline
+	MLE-NR & 208.03 & 14.42 & 14.42 \\
+	\hline
+	MLE-GD & 29.$e^{9}$ & 16.$e^{4}$ & 17.$e^{4}$ \\
+	\hline
+	Bayesian & 0.201 & 0.408 & 0.449 \\
+	\hline
+	MOM & 11.$e^{9}$ & 10.$e^{4}$ & 10.$e^{4}$ \\
+	\hline
+	MOM-NR & 0.011 & 0.076 & 0.105 \\
+	\hline
+	MLR & 0.011 & 0.076 & 0.105 \\
+	\hline
+\end{tabular}
+	\caption{\textbf{Parameter estimation results using Log - transformation}}
+\label{tab:log-trans}
+\end{table}
+	
+	\begin{table}[h]
+		\centering
+				\begin{tabular}{|c|c|c|c|}
+			\hline
+			& MSE & MAE & RMSE \\
+			\hline
+			MLE-NR & 194.86 & 13.94 & 13.96 \\
+			\hline
+			MLE-GD & 19.$e^{5}$ & 12.$e^{3}$ & 14.$e^{3}$ \\
+			\hline
+			Bayesian & 0.813 & 0.883 & 0.901 \\
+			\hline
+			MOM & 63.$e^{5}$ & 21.$e^{3}$ & 25.$e^{4}$ \\
+			\hline
+			MOM-NR & 0.001 & 0.023 & 0.032 \\
+			\hline
+			MLR & 0.001 & 0.023 & 0.032 \\
+			\hline
+		\end{tabular}
+		\caption{\textbf{Parameter estimation results using SQRT - transformation}}
+		\label{tab:sqrt-trans}
+		\end{table}
+	
+	Following the synthesis of the summarized results from the two tables, it becomes evident that the Method of Moments (MOM) optimized through Newton Graphson emerges as the most apt and effective approach for the Student Performance dataset. This assertion is grounded in the meticulous assessment of errors, quantified by metrics such as Mean Squared Error (MSE), Mean Absolute Error (MAE), and Root Mean Squared Error (RMSE), which indicate a remarkable diminution when employing this method. Moreover, the parameter coefficients derived from MOM optimization via Newton Graphson align remarkably well with those yielded by the Multiple Linear Regression (MLR) model implemented using R's built-in package, exhibiting an equally high degree of precision. This concordance holds true for both logarithmic and square root transformations applied to the target variable.
+	
+	Subsequently, the Bayesian Estimation method emerges as the next most accurate, albeit marginally trailing behind MOM - NR, particularly excelling when applied to data subjected to log transformation. Conversely, other methodologies display a marked lack of compatibility with the data's underlying distribution, consequently yielding notably inferior metric outcomes.
+	
+	Notably, the MOM approach, despite its apparent simplicity, surprisingly yielded exceedingly poor results, showcasing a stark underperformance even when compared to the Maximum Likelihood Estimation (MLE) method optimized using Newton-Graphson. Intriguingly, in both instances of target variable transformation, MLE with Gradient Descent optimization demonstrated the poorest performance.
+	
+	In our pursuit of refinement, we experimented with diverse alterations to various log-likelihood functions, alongside the selection of disparate prior distributions, and the manipulation of initialization parameters, learning rates, and iteration counts. Regrettably, these adjustments failed to yield appreciable enhancements.
+	
+	In summation, the Method of Moments optimized through Newton Graphson emerged as the most efficacious, primarily owing to its superior prowess in error minimization and its close adherence to the results obtained from the MLR model fitted through established R packages. Conversely, the lackluster performance of alternative methods can largely be attributed to their inadequate fit with the data's distributional characteristics.
+	
+	\section{Discussions}
+	
+	In light of the provided results, Maximum Likelihood Estimation (MLE) proves less effective due to the target variable in the surveyed data not adhering strictly to a standard distribution, despite attempts to normalize it through various transformations. Conversely, Method of Moments optimized by Newton Graphson (MOM - NR) emerges as the most suitable approach for this scenario, offering superior estimation performance.
+	
+	Beyond its robustness in non-standard distributional settings, MOM - NR benefits from its straightforward implementation and computational efficiency. Additionally, its reliance on sample moments makes it particularly adept at capturing the central tendencies of the data, even amidst distributional complexities.
+	
+	Considering these findings, the recommendation for method selection hinges on several factors. Firstly, the structural characteristics of the dataset, notably its distributional properties, should guide the choice of method. MOM - NR is well-suited for datasets with non-standard distributions or those exhibiting robustness against outliers.
+	
+	Secondly, the ease of implementation and computational efficiency should be considered, especially when dealing with large datasets or resource-constrained environments. MOM - NR's simplicity and computational efficiency render it a pragmatic choice in such scenarios.
+	
+	Lastly, the interpretability and robustness of the estimation results are paramount. MOM - NR's reliance on sample moments provides transparent insights into the data's central tendencies, facilitating the interpretation of parameter estimates.
+	
+	In conclusion, Method of Moments optimized by Newton Graphson presents itself as the preferred choice for parameter estimation in scenarios where the target variable deviates from a standard distribution. Its robustness, simplicity, and interpretability make it a compelling option, particularly when dealing with non-standard data distributions and resource constraints.
+	
+		
+	\begin{thebibliography}{9}
+	\bibitem{GelmanEtAl2013}
+	Gelman, A., Carlin, J. B., Stern, H. S., Dunson, D. B., Vehtari, A., Rubin, D. B.
+	\textit{Bayesian Data Analysis (3rd ed.)}.
+	Chapman and Hall/CRC, 2013.
+	
+	\bibitem{HastieEtAl2009}
+	Hastie, T., Tibshirani, R., Friedman, J.
+	\textit{The Elements of Statistical Learning: Data Mining, Inference, and Prediction (2nd ed.)}.
+	Springer, 2009.
+	
+	\bibitem{Wasserman2004}
+	Wasserman, L.
+	\textit{All of Statistics: A Concise Course in Statistical Inference}.
+	Springer, 2004.
+	
+	\bibitem{CasellaBerger2002}
+	Casella, G.,  Berger, R. L.
+	\textit{Statistical Inference (2nd ed.)}.
+	Duxbury Press, 2002.
+	
+	\bibitem{GelmanHill2006}
+	Gelman, A., Hill, J.
+	\textit{Data Analysis Using Regression and Multilevel/Hierarchical Models}.
+	Cambridge University Press, 2006.
+	
+	\bibitem{Bishop2006}
+	Bishop, C. M.
+	\textit{Pattern Recognition and Machine Learning}.
+	Springer, 2006.
+	
+	\bibitem{Fox2008}
+	Fox, J.
+	\textit{Applied Regression Analysis and Generalized Linear Models}.
+	Sage Publications, 2008.
+	
+	\bibitem{ShaliziShalizi2013}
+	Shalizi, C. R.,  Shalizi, K. L.
+	\textit{Advanced Data Analysis from an Elementary Point of View}.
+	Cambridge University Press, 2013.
+	
+	\bibitem{KuhnJohnson2013}
+	Kuhn, M., Johnson, K.
+	\textit{Applied Predictive Modeling}.
+	Springer, 2013.
+	\end{thebibliography}
+	
+	\section*{Appendix}
+	\subsection*{Figures}
+		
+	\begin{figure}[h]
+		\centering
+		\includegraphics[width=0.8\linewidth]{heatmap}
+		\caption{Correlation checking}
+		\label{fig:heatmap}
+	\end{figure}
+	
+	\begin{figure}[h]
+		\centering
+		\includegraphics[width=0.4\textwidth]{PI.png}\hfill
+		\includegraphics[width=0.4\textwidth]{qq1.png}
+		\caption{Normality checking for target variable}
+		\label{fig:QQplot}
+	\end{figure}
+	
+	\begin{figure}[h]
+		\centering
+		\includegraphics[width=0.4\textwidth]{sqrt.png}\hfill
+		\includegraphics[width=0.4\textwidth]{qq2.png}
+		\caption{SQRT Transformation}
+		\label{fig:SQRT}
+	\end{figure}
+	
+	\begin{figure}[h]
+		\centering
+		\includegraphics[width=0.4\textwidth]{log.png}\hfill
+		\includegraphics[width=0.4\textwidth]{qq3.png}
+		\caption{Log transformation}
+		\label{fig:Log}
+	\end{figure}
+	
+	\clearpage
+	
+	\subsubsection*{R codes}
+	\begin{lstlisting}
+		# 1. Load the packages and data sets
+		```{r, message = FALSE}
+		pkg_list <- c("dplyr", "caret", "boot","calibrate", "gridExtra","MASS", "ggplot2", "reshape2", "stats") 
+		# Install packages if needed
+		for (pkg in pkg_list)
+		{
+			# Try loading the library.
+			if ( ! library(pkg, logical.return=TRUE, character.only=TRUE) )
+			{
+				# If the library cannot be loaded, install it; then load.
+				install.packages(pkg)
+				library(pkg, character.only=TRUE)
+			}
+		}
+		```
+		
+		```{r cache=TRUE}
+		# Load the data 
+		data<-read.csv("Student.csv")
+		head(data)
+		glimpse(data)
+		summary(data)
+		```
+		# 2. Data engineering and EDA
+		## PLots
+		```{r}
+		par(mfrow = c(3, 3))  # Set up a 3x3 grid for plotting
+		variables_to_plot <- setdiff(names(data), "Extracurricular.Activities")  # Exclude 'Extracurricular.Activities'
+		
+		for (i in 1:length(variables_to_plot)) {
+			hist(data[, variables_to_plot[i]], main = paste("Histogram of", variables_to_plot[i]), xlab = variables_to_plot[i],col = "lightblue")
+		}
+		
+		```
+		```{r}
+		# Plot boxplot for each numerical variable
+		boxplot(data$Hours.Studied, main="Hours Studied Boxplot")
+		boxplot(data$Previous.Scores, main="Previous Scores Boxplot")
+		boxplot(data$Sleep.Hours, main="Sleep Hours Boxplot")
+		boxplot(data$Sample.Question.Papers.Practiced, main="Sample Question Papers Practiced Boxplot")
+		boxplot(data$Performance.Index, main="Performance Index Boxplot")
+		
+		```
+		Checking Correlation 
+		```{r}
+		# Calculate the correlation matrix without the column 'Extracurricular.Activities'
+		correlation_matrix <- cor(data[, !colnames(data) %in% "Extracurricular.Activities"])
+		
+		# Melt correlation matrix for ggplot2
+		correlation_df <- melt(correlation_matrix)
+		
+		# Plot heatmap
+		ggplot(correlation_df, aes(Var1, Var2, fill = value)) +
+		geom_tile(color = "white") +
+		scale_fill_gradient2(low = "blue", mid = "white", high = "red", 
+		midpoint = 0, limit = c(-1,1), space = "Lab", 
+		name="Correlation") +
+		geom_text(aes(label = round(value, 2)), color = "black") + # Add annotation
+		theme_minimal() + # Simple theme
+		labs(title = "Correlation Heatmap", x = "", y = "") + # Add titles
+		theme(axis.text.x = element_text(angle = 45, vjust = 1, 
+		size = 10, hjust = 1)) # Rotate x-axis labels
+		```
+		## Engineering
+		### a) Checking outliners
+		```{r}
+		# Function to calculate IQR for each variable
+		calculate_iqr <- function(data) {
+			q1 <- quantile(data, 0.25)
+			q3 <- quantile(data, 0.75)
+			iqr <- q3 - q1
+			return(iqr)
+		}
+		
+		# Function to find outliers based on IQR
+		find_outliers <- function(data) {
+			q1 <- quantile(data, 0.25)
+			q3 <- quantile(data, 0.75)
+			iqr <- q3 - q1
+			lower_bound <- q1 - 1.5 * iqr
+			upper_bound <- q3 + 1.5 * iqr
+			outliers <- data[data < lower_bound | data > upper_bound]
+			return(outliers)
+		}
+		
+		# Apply for each variable except Extracurricular.Activities
+		outliers <- lapply(data[, -which(names(data) == "Extracurricular.Activities")], find_outliers)
+		
+		# Display the outliers
+		print(outliers)
+		
+		```
+		### b) Create categorical variables
+		```{r}
+		# Create dummy variables for "Extracurricular.Activities"
+		student <- cbind(data, model.matrix(~ Extracurricular.Activities - 1, data = data))
+		
+		# Remove the original column "Extracurricular.Activities"
+		student <- student[, -which(names(student) == "Extracurricular.Activities")]
+		
+		# Summary of the adjusted dataset
+		summary(student)
+		glimpse(student)
+		
+		```
+		### c) Standardize data
+		
+		```{r}
+		# Define a function for min-max scaling
+		min_max_scale <- function(x) {
+			(x - min(x)) / (max(x) - min(x))
+		}
+		
+		# Apply min-max scaling to numeric columns except for 'Extracurricular.ActivitiesNo' and 'Extracurricular.ActivitiesYes'
+		scaled_data <- student
+		numeric_cols <- c("Hours.Studied", "Previous.Scores", "Sleep.Hours", "Sample.Question.Papers.Practiced", "Performance.Index")
+		scaled_data[, numeric_cols] <- lapply(scaled_data[, numeric_cols], min_max_scale)
+		
+		# Create the scales_student data frame
+		scaled_student <- scaled_data
+		
+		# Check the structure of the scales_student data frame
+		summary(scaled_student)
+		```
+		### d) Check missing value
+		
+		```{r}
+		# Check for missing values in each column
+		missing_values <- sapply(scaled_student, function(x) sum(is.na(x)))
+		
+		# Or count the total number of missing values in each column
+		total_missing <- colSums(is.na(scaled_student))
+		
+		# Print the results
+		print(missing_values)
+		print(total_missing)
+		
+		```
+		### e)  Check target variable's distribution 
+		```{r}
+		# Plot histogram of the target variable
+		hist(scaled_student$Performance.Index, main = "Histogram of Performance Index", xlab = "Performance Index")
+		
+		# QQ Plot
+		qqnorm(scaled_student$Performance.Index)
+		qqline(scaled_student$Performance.Index)
+		
+		# Perform Kolmogorov-Smirnov test for normality
+		ks_test <- ks.test(scaled_student$Performance.Index, "pnorm", mean = mean(scaled_student$Performance.Index), sd = sd(scaled_student$Performance.Index))
+		
+		# Print the test result
+		print(ks_test)
+		
+		```
+		# 3. Transformation target variable
+		## 3.1 SQRT
+		```{r}
+		# Sqrt transformation
+		sqrt_student <- scaled_student
+		sqrt_student$Performance.Index <- sqrt(scaled_student$Performance.Index)
+		
+		# Plot histogram of original and transformed variable
+		par(mfrow = c(1, 2))
+		hist(scaled_student$Performance.Index, main = "Original Histogram", xlab = "Original Performance.Index")
+		hist(sqrt_student$Performance.Index, main = "Sqrt Transformed Histogram", xlab = "Sqrt Transformed Performance.Index")
+		
+		# QQ Plot
+		qqnorm(sqrt_student$Performance.Index)
+		qqline(sqrt_student$Performance.Index)
+		
+		# Conduct Kolmogorov-Smirnov test for normality
+		ks_test1 <- ks.test(sqrt_student$Performance.Index, "pnorm", mean = mean(sqrt_student$Performance.Index), sd = sd(sqrt_student$Performance.Index))
+		print(ks_test1)
+		
+		```
+		## 3.2 Log
+		```{r}
+		# Log transformation
+		log_student <- student
+		log_student$Performance.Index <- log(student$Performance.Index)
+		log_student
+		
+		# Plot histogram of original and transformed variable
+		par(mfrow = c(1, 2))
+		hist(student$Performance.Index, main = "Original Histogram", xlab = "Original Performance.Index")
+		hist(log_student$Performance.Index, main = "Log Transformed Histogram", xlab = "Log Transformed Performance.Index")
+		
+		# QQ Plot
+		qqnorm(log_student$Performance.Index)
+		qqline(log_student$Performance.Index)
+		
+		# Perform Kolmogorov-Smirnov test for normality
+		ks_test2 <- ks.test(log_student$Performance.Index, "pnorm", mean = mean(log_student$Performance.Index), sd = sd(log_student$Performance.Index))
+		
+		# Print the test result
+		print(ks_test2)
+		
+		# Kolmogorov-Smirnov test for log-normal distribution
+		ks_test3 <- ks.test(log_student$Performance.Index, "plnorm", meanlog = mean(log(log_student$Performance.Index)), sdlog = sd(log(log_student$Performance.Index)))
+		
+		# Print the result
+		print(ks_test3)
+		
+		
+		```
+		# 4. Parameter estimation
+		
+		## a) Define the target and predictors
+		```{r}
+		# Define the predictor variables (independent variables)
+		predictors <- sqrt_student[, !names(scaled_student) %in% c("Performance.Index")]
+		
+		# Define the target variable (dependent variable)
+		target <- sqrt_student$Performance.Index
+		```
+		
+		
+		## b) Split data into training and validation sets
+		
+		```{r cache=TRUE}
+		# Set seed for reproducibility
+		set.seed(129)
+		
+		# Number of observations
+		n <- nrow(sqrt_student)
+		
+		# Calculate the number of observations for training (80%)
+		n_train <- round(0.8 * n)
+		
+		# Randomly select indices for training
+		train_indices <- sample(1:n, n_train, replace = FALSE)
+		
+		# Create training and validation datasets
+		train_data <- sqrt_student[train_indices, ]
+		validation_data <- sqrt_student[-train_indices, ]
+		```
+		
+		## c) Preparation for parameter estimation 
+		```{r}
+		# Define the predictor variables (independent variables) for training data
+		train_predictors <- train_data[, !names(train_data) %in% c("Performance.Index")]
+		
+		# Define the target variable (dependent variable) for training data
+		train_target <- train_data$Performance.Index
+		
+		# Define the predictor variables (independent variables) for training data
+		train_predictors <- train_data[, !names(train_data) %in% c("Performance.Index","Extracurricular.ActivitiesNo")]
+		
+		# Convert non-numeric predictor variables to numeric for training data
+		for (col in names(train_predictors)) {
+			if (!is.numeric(train_predictors[[col]])) {
+				train_predictors[[col]] <- as.numeric(as.character(train_predictors[[col]]))
+			}
+		}
+		
+		# Convert Extracurricular.ActivitiesYes to binary numeric (0 or 1) for training data
+		train_predictors$Extracurricular.ActivitiesYes <- as.numeric(train_predictors$Extracurricular.ActivitiesYes != 0)
+		
+		# Convert train_predictors to a numeric matrix for training data
+		train_predictors <- as.matrix(train_predictors)
+		
+		# Define the predictor variables (independent variables) for validation data
+		validation_predictors <- validation_data[, !names(validation_data) %in% c("Performance.Index")]
+		
+		# Define the target variable (dependent variable) for validation data
+		validation_target <- validation_data$Performance.Index
+		
+		# Define the predictor variables (independent variables) for validation data
+		validation_predictors <- validation_data[, !names(validation_data) %in% c("Performance.Index","Extracurricular.ActivitiesNo")]
+		
+		# Convert non-numeric predictor variables to numeric for validation data
+		for (col in names(validation_predictors)) {
+			if (!is.numeric(validation_predictors[[col]])) {
+				validation_predictors[[col]] <- as.numeric(as.character(validation_predictors[[col]]))
+			}
+		}
+		
+		# Convert Extracurricular.ActivitiesYes to binary numeric (0 or 1) for validation data
+		validation_predictors$Extracurricular.ActivitiesYes <- as.numeric(validation_predictors$Extracurricular.ActivitiesYes != 0)
+		
+		# Convert validation_predictors to a numeric matrix for validation data
+		validation_predictors <- as.matrix(validation_predictors)
+		
+		```
+		
+		
+		## 4.1. Fit model using R package
+		```{r}
+		# Fit LR model 
+		model <- lm(Performance.Index ~ ., data = train_data[, !names(train_data) %in% c("Extracurricular.ActivitiesNo")])
+		summary(model)
+		
+		```
+		EVALUATION MODEL 
+		```{r}
+		# Predict on validation set
+		predictions <- predict(model, newdata = validation_data)
+		
+		# Calculate evaluation metrics
+		mse_val <- mean((predictions - validation_data$Performance.Index)^2)
+		mae_val <- mean(abs(predictions - validation_data$Performance.Index))
+		rmse_val <- sqrt(mse_val)
+		R_squared_val <- summary(model)$r.squared
+		
+		# Print evaluation metrics
+		print("MLR evaluation:")
+		cat("Mean Squared Error (MSE): ", mse_val, "\n")
+		cat("Mean Absolute Error (MAE): ", mae_val, "\n")
+		cat("Root Mean Squared Error (RMSE): ", rmse_val, "\n")
+		cat("R-squared: ", R_squared_val, "\n")
+		```
+		## 4.2 MLE optimizied by Newton - Graphson 
+		PARAMETER ESTIMATION ON TRAINING SET
+		
+		```{r}
+		# Define the target variable (dependent variable)
+		Y <- train_target
+		
+		# Define the predictor variables (independent variables)
+		X <- cbind(1, train_predictors)
+		
+		# Step 1: Define the log-likelihood function
+		log_likelihood <- function(params, x, y) {
+			# Extract parameters
+			beta0 <- params[1]
+			beta1 <- params[2]
+			beta2 <- params[3]
+			beta3 <- params[4]
+			beta4 <- params[5]
+			beta5 <- params[6]
+			
+			# Calculate predicted values
+			y_pred <- beta0 + beta1*x[,1] + beta2*x[,2] + beta3*x[,3] + beta4*x[,4] + beta5*x[,5]
+			
+			# Calculate residuals
+			residuals <- y - y_pred
+			
+			# Calculate log-likelihood (assuming Gaussian errors)
+			log_likelihood <- sum(dnorm(residuals, mean = 0, sd = sd(residuals), log = TRUE))
+			
+			return(log_likelihood)
+		}
+		
+		# Step 2:  Define the gradient of the log-likelihood function
+		grad_log_likelihood <- function(params, x, y) {
+			# Extract parameters
+			beta0 <- params[1]
+			beta1 <- params[2]
+			beta2 <- params[3]
+			beta3 <- params[4]
+			beta4 <- params[5]
+			beta5 <- params[6]
+			
+			# Calculate predicted values
+			y_pred <- beta0 + beta1*x[,1] + beta2*x[,2] + beta3*x[,3] + beta4*x[,4] + beta5*x[,5]
+			
+			# Calculate residuals
+			residuals <- y - y_pred
+			
+			# Calculate gradient
+			grad <- colSums(residuals * x)
+			
+			return(grad)
+		}
+		
+		# Step 3: Define the Hessian matrix of the log-likelihood function
+		hessian_log_likelihood <- function(params, x, y) {
+			# Extract parameters
+			beta0 <- params[1]
+			beta1 <- params[2]
+			beta2 <- params[3]
+			beta3 <- params[4]
+			beta4 <- params[5]
+			beta5 <- params[6]
+			
+			# Calculate predicted values
+			y_pred <- beta0 + beta1*x[,1] + beta2*x[,2] + beta3*x[,3] + beta4*x[,4] + beta5*x[,5]
+			
+			# Calculate residuals
+			residuals <- y - y_pred
+			
+			# Calculate Hessian matrix
+			hessian <- t(x) %*% diag(residuals^2) %*% x
+			
+			return(hessian)
+		}
+		
+		# Step 4: Define the Newton-Raphson optimization function
+		newton_raphson <- function(params, x, y) {
+			# Define a small value for convergence criterion
+			epsilon <- 1e-6
+			
+			# Maximum number of iterations
+			max_iter <- 100
+			
+			# Initialize parameters and iteration counter
+			params_old <- params
+			iter <- 0
+			
+			# Iterate until convergence
+			while (iter < max_iter) {
+				# Update iteration counter
+				iter <- iter + 1
+				
+				# Calculate gradient and Hessian matrix
+				grad <- grad_log_likelihood(params_old, x, y)
+				hessian <- hessian_log_likelihood(params_old, x, y)
+				
+				# Calculate parameter update using Newton-Raphson formula
+				params_new <- params_old - solve(hessian) %*% grad
+				
+				# Check convergence
+				if (max(abs(params_new - params_old)) < epsilon) {
+					break
+				}
+				
+				# Update parameters for next iteration
+				params_old <- params_new
+			}
+			
+			return(params_new)
+		}
+		
+		# Step 5: Estimate the Parameters using Newton-Raphson
+		initial_params <- rep(0, 6)  # Initialize parameters
+		mle_params_newton <- newton_raphson(initial_params, x = X, y = Y)
+		
+		# Display the MLE parameters
+		print("Maximum Likelihood Estimates (Newton-Raphson):")
+		print(mle_params_newton)
+		```
+		EVALUATE MLE_NR ON VALIDATION SET
+		```{r}
+		# Define the validation set
+		Y_val <- validation_target
+		X_val <- cbind(1, validation_predictors)
+		
+		# Calculate predicted values on validation set
+		Y_pred_val <- X_val %*% mle_params_newton
+		
+		# Calculate residuals
+		residuals_val <- Y_val - Y_pred_val
+		
+		# Calculate Mean Squared Error (MSE)
+		mse_val <- mean(residuals_val^2)
+		
+		# Calculate Mean Absolute Error (MAE)
+		mae_val <- mean(abs(residuals_val))
+		
+		# Calculate Root Mean Squared Error (RMSE)
+		rmse_val <- sqrt(mean(residuals_val^2))
+		
+		# Print the evaluation metrics
+		cat("MLE-NR Validation Set Metrics:\n")
+		cat("Mean Squared Error (MSE): ", mse_val, "\n")
+		cat("Mean Absolute Error (MAE): ", mae_val, "\n")
+		cat("Root Mean Squared Error (RMSE): ", rmse_val, "\n")
+		
+		```
+		## 4.3 MLE optimized by Gradient Descent 
+		```{r}
+		# Define the target variable (dependent variable)
+		Y <- train_target
+		
+		# Define the predictor variables (independent variables)
+		X <- cbind(1, train_predictors)
+		
+		# Step 1: Define the log-likelihood function
+		log_likelihood2 <- function(params2, x, y) {
+			# Extract parameters
+			beta0 <- params2[1]
+			beta1 <- params2[2]
+			beta2 <- params2[3]
+			beta3 <- params2[4]
+			beta4 <- params2[5]
+			beta5 <- params2[6]
+			
+			# Calculate predicted values
+			y_pred <- beta0 + beta1*x[,1] + beta2*x[,2] + beta3*x[,3] + beta4*x[,4] + beta5*x[,5]
+			
+			# Calculate residuals
+			residuals <- y - y_pred
+			
+			# Calculate log-likelihood (assuming Gaussian errors)
+			log_likelihood <- sum(dnorm(residuals, mean = 0, sd = sd(residuals), log = TRUE))
+			
+			return(log_likelihood)
+		}
+		
+		# Step 2:  Define the gradient of the log-likelihood function
+		grad_log_likelihood2 <- function(params2, x, y, delta = 1e-6) {
+			# Initialize an empty vector to store the gradients
+			grad2 <- numeric(length(params2))
+			
+			# Calculate the gradient for each parameter
+			for (i in seq_along(params2)) {
+				# Perturb the parameter value
+				params_plus <- params2
+				params_plus[i] <- params_plus[i] + delta
+				
+				# Calculate the log-likelihood at the perturbed parameter value
+				log_likelihood_plus <- log_likelihood2(params_plus, x, y)
+				
+				# Perturb the parameter value in the opposite direction
+				params_minus <- params2
+				params_minus[i] <- params_minus[i] - delta
+				
+				# Calculate the log-likelihood at the perturbed parameter value
+				log_likelihood_minus <- log_likelihood2(params_minus, x, y)
+				
+				# Calculate the finite difference approximation of the gradient
+				grad2[i] <- (log_likelihood_plus - log_likelihood_minus) / (2 * delta)
+			}
+			
+			return(grad2)
+		}
+		
+		# Step 3: Gradient Descent optimization function
+		gradient_descent2 <- function(params2, x, y, learning_rate = 0.001, max_iter = 1000, epsilon = 1e-6) {
+			iter <- 0
+			while (iter < max_iter) {
+				iter <- iter + 1
+				
+				# Calculate predicted values
+				y_pred <- x %*% params2
+				
+				# Calculate residuals
+				residuals <- y - y_pred
+				
+				# Calculate gradient
+				grad <- grad_log_likelihood2(params2, x, y)
+				
+				# Check for NA values in gradient
+				if (any(is.na(grad))) {
+					print("Gradient contains NA values. Exiting...")
+					break
+				}
+				
+				# Update parameters
+				params2 <- params2 - learning_rate * grad
+				
+				# Check convergence
+				if (max(abs(learning_rate * grad)) < epsilon) {
+					break
+				}
+			}
+			return(params2)
+		}
+		
+		# Step 4: Estimate the Parameters using GD
+		initial_params2 <- rep(0, 6)  # Initialize parameters
+		mle_params_gradient_descent2 <- gradient_descent2(initial_params2, x = X, y = Y)
+		
+		# Display the MLE parameters
+		print("Maximum Likelihood Estimates (Gradient Descent):")
+		print(mle_params_gradient_descent2)
+		
+		```
+		EVALUATE MLE_GD ON VALIDATION SET
+		```{r}
+		# Define the validation set
+		Y_val <- validation_target
+		X_val <- cbind(1, validation_predictors)
+		
+		# Calculate predicted values on validation set
+		Y_pred_val <- X_val %*% mle_params_gradient_descent2
+		
+		# Calculate residuals
+		residuals_val <- Y_val - Y_pred_val
+		
+		# Calculate Mean Squared Error (MSE)
+		mse_val <- mean(residuals_val^2)
+		
+		# Calculate Mean Absolute Error (MAE)
+		mae_val <- mean(abs(residuals_val))
+		
+		# Calculate Root Mean Squared Error (RMSE)
+		rmse_val <- sqrt(mean(residuals_val^2))
+		
+		# Print the evaluation metrics
+		cat("MLE-GD Validation Set Metrics:\n")
+		cat("Mean Squared Error (MSE): ", mse_val, "\n")
+		cat("Mean Absolute Error (MAE): ", mae_val, "\n")
+		cat("Root Mean Squared Error (RMSE): ", rmse_val, "\n")
+		
+		```
+		## 4.4 MOM
+		```{r}
+		# Define the target variable (dependent variable) and predictor variables (independent variables) for the training set
+		Y_train <- train_target
+		X_train <- cbind(1, train_predictors)
+		
+		# Calculate the sample moments for the training set
+		m1_train <- colMeans(X_train)
+		m2_train <- colMeans(X_train^2)
+		m3_train <- colMeans(X_train^3)
+		m4_train <- colMeans(X_train^4)
+		m5_train <- colMeans(X_train^5)
+		
+		# Construct the moment matrix for the training set
+		moment_matrix_train <- matrix(0, nrow = dim(X_train)[2], ncol = dim(X_train)[2])
+		
+		# Calculate the first column and row of the moment matrix
+		moment_matrix_train[1, 1] <- mean(Y_train)
+		moment_matrix_train[2:(dim(X_train)[2]), 1] <- m1_train[-1]
+		moment_matrix_train[1, 2:(dim(X_train)[2])] <- m1_train[-1]
+		
+		# Calculate the rest of the moment matrix
+		for (i in 2:dim(X_train)[2]) {
+			for (j in 2:dim(X_train)[2]) {
+				moment_matrix_train[i, j] <- mean((X_train[, i] - m1_train[i]) * (X_train[, j] - m1_train[j]))
+			}
+		}
+		
+		# Create the vector to be solved
+		b <- c(mean(Y_train), colSums(Y_train * X_train[, -1]))  # Exclude the intercept column
+		
+		# Solve for the parameters using OLS for the training set
+		parameters_train <- solve(moment_matrix_train, b)
+		
+		# Display the MOM parameters
+		print("MOM estimates:")
+		print(parameters_train)
+		
+		```
+		EVALUATE MOM METHOD
+		```{r}
+		# Calculate predicted values for the validation set using the estimated parameters
+		Y_pred_val <- X_val %*% parameters_train
+		
+		# Calculate evaluation metrics for the validation set 
+		mse_val <- mean((validation_target - Y_pred_val)^2)
+		mae_val <- mean(abs(validation_target - Y_pred_val))
+		rmse_val <- sqrt(mean((validation_target - Y_pred_val)^2))
+		
+		# Print the evaluation metrics for the validation set
+		cat("MOM Validation Set Metrics:\n")
+		cat("Mean Squared Error (MSE): ", mse_val, "\n")
+		cat("Mean Absolute Error (MAE): ", mae_val, "\n")
+		cat("Root Mean Squared Error (RMSE): ", rmse_val, "\n")
+		
+		```
+		## 4.5. MOM optimized by Newton-Graphson 
+		```{r}
+		# Define the loss function
+		loss_function <- function(params, x, y) {
+			y_pred <- x %*% params
+			loss <- sum((y - y_pred)^2)
+			return(loss)
+		}
+		
+		# Define the gradient of the loss function
+		gradient <- function(mom_params, x, y) {
+			y_pred <- x %*% mom_params
+			mom_grad <- -2 * t(x) %*% (y - y_pred)
+			return(mom_grad)
+		}
+		
+		# Apply the Newton-Raphson method
+		optimize_parameters_NR <- function(x, y, initial_params) {
+			mom_params <- initial_params
+			max_iter <- 100
+			epsilon <- 1e-4
+			iter <- 0
+			while (iter < max_iter) {
+				mom_grad <- gradient(mom_params, x, y)
+				hessian <- 2 * t(x) %*% x
+				update <- solve(hessian) %*% mom_grad
+				mom_params <- mom_params - update
+				if (max(abs(update)) < epsilon) {
+					break
+				}
+				iter <- iter + 1
+			}
+			return(mom_params)
+		}
+		
+		# Use the Newton-Raphson method to optimize parameters
+		initial_params <- rep(0, ncol(X_train))
+		mom_params_NR <- optimize_parameters_NR(X_train, Y_train, initial_params)
+		
+		# Display the MOM estimates optimized with Newton-Raphson
+		print("MOM estimates (optimized with Newton-Raphson):")
+		print(mom_params_NR)
+		
+		```
+		EVALUATE MOM METHOD OPTIMIZED BY NEWTON - GRAPHSON ALGORITHM
+		```{r}
+		# Calculate predicted values for the validation set using the estimated parameters
+		Y_pred_val <- X_val %*% mom_params_NR
+		
+		# Calculate evaluation metrics for the validation set (e.g., MSE, MAE, RMSE, R-squared)
+		mse_val <- mean((validation_target - Y_pred_val)^2)
+		mae_val <- mean(abs(validation_target - Y_pred_val))
+		rmse_val <- sqrt(mean((validation_target - Y_pred_val)^2))
+		R_squared_val <- 1 - sum((validation_target - Y_pred_val)^2) / sum((validation_target - mean(validation_target))^2)
+		
+		# Print the evaluation metrics for the validation set
+		cat("MOM - NR Validation Set Metrics:\n")
+		cat("Mean Squared Error (MSE): ", mse_val, "\n")
+		cat("Mean Absolute Error (MAE): ", mae_val, "\n")
+		cat("Root Mean Squared Error (RMSE): ", rmse_val, "\n")
+		cat("R-squared: ", R_squared_val, "\n")
+		
+		```
+		## 4.6 Bayesian estimation
+		```{r}
+		# Define the log-posterior function
+		log_posterior <- function(params, x, y, prior_params) {
+			# Extract parameters
+			beta <- params[-1]
+			sigma <- params[1]
+			nu <- params[1]
+			
+			# Define the log-likelihood function
+			log_likelihood <- sum(dt((y - x %*% beta) / sigma, df = nu, log = TRUE) - log(sigma))
+			
+			# Define the log-prior function
+			log_prior <- sum(dnorm(beta, mean = prior_params$beta_mean, sd = prior_params$beta_sd, log = TRUE)) + dnorm(sigma, mean = prior_params$sigma_mean, sd = prior_params$sigma_sd, log = TRUE) + dgamma(nu, shape = prior_params$nu_shape, rate = prior_params$nu_rate, log = TRUE)
+			
+			# Calculate log-posterior
+			log_posterior <- log_likelihood + log_prior
+			
+			return(log_posterior)
+		}
+		
+		# Define the function for Bayesian estimation using Metropolis-Hastings algorithm
+		bayesian_estimation <- function(x, y, prior_params, initial_params, num_iterations) {
+			# Initialize parameters and accepted samples
+			params <- matrix(0, nrow = num_iterations, ncol = length(initial_params))
+			accepted_samples <- 0
+			
+			# Initialize current parameter values
+			current_params <- initial_params
+			
+			# Initialize proposal standard deviations
+			proposal_sds <- c(0.1, rep(0.01, length(current_params) - 1))
+			
+			# Set random seed
+			set.seed(129)
+			
+			# Run Metropolis-Hastings algorithm
+			for (i in 1:num_iterations) {
+				# Propose new parameter values
+				proposed_params <- current_params + rnorm(length(current_params), mean = 0, sd = proposal_sds)
+				
+				# Calculate log-posterior for current and proposed parameters
+				log_posterior_current <- log_posterior(current_params, x, y, prior_params)
+				log_posterior_proposed <- log_posterior(proposed_params, x, y, prior_params)
+				
+				# Check for NaNs in log-posterior
+				if (is.nan(log_posterior_current) || is.nan(log_posterior_proposed)) {
+					cat("Warning: NaN encountered in log-posterior calculation. Skipping iteration ", i, "\n")
+					next
+				}
+				
+				# Calculate acceptance ratio
+				acceptance_ratio <- exp(log_posterior_proposed - log_posterior_current)
+				
+				# Check for NaNs in acceptance ratio
+				if (is.nan(acceptance_ratio)) {
+					cat("Warning: NaN encountered in acceptance ratio calculation. Skipping iteration ", i, "\n")
+					next
+				}
+				
+				# Accept or reject proposal
+				if (runif(1) < acceptance_ratio) {
+					current_params <- proposed_params
+					accepted_samples <- accepted_samples + 1
+				}
+				
+				# Save current parameters
+				params[i, ] <- current_params
+			}
+			
+			# Discard burn-in samples
+			params <- params[(num_iterations * 0.2 + 1):num_iterations, ]
+			
+			# Acceptance rate
+			acceptance_rate <- accepted_samples / num_iterations
+			
+			return(list(params = params, acceptance_rate = acceptance_rate))
+		}
+		
+		# Define prior parameters
+		prior_params <- list(beta_mean = rep(0, ncol(X_train) - 1), beta_sd = rep(1, ncol(X_train) - 1), sigma_mean = 1, sigma_sd = 0.5, nu_shape = 2, nu_rate = 1)
+		
+		# Define initial parameters and number of iterations
+		initial_params <- c(1, rep(0, ncol(X_train) - 1), 3)  # Initial value for sigma, betas, and nu
+		num_iterations <- 100
+		
+		# Perform Bayesian estimation
+		bayesian_results <- bayesian_estimation(X, Y, prior_params, initial_params, num_iterations)
+		
+		# Extract parameter estimates
+		parameter_estimates<- colMeans(bayesian_results$params)
+		bayesian_estimates<- parameter_estimates[1:6]
+		
+		# Display parameter estimates
+		print("Bayesian Parameter Estimates:")
+		print(bayesian_estimates)
+		
+		```
+		EVALUATE BAYESIAN ESTIMATION
+		```{r}
+		# Calculate predicted values for the validation set using the estimated parameters
+		Y_pred_val <- X_val %*% bayesian_estimates
+		
+		# Calculate evaluation metrics for the validation set (e.g., MSE, MAE, RMSE, R-squared)
+		mse_val <- mean((validation_target - Y_pred_val)^2)
+		mae_val <- mean(abs(validation_target - Y_pred_val))
+		rmse_val <- sqrt(mean((validation_target - Y_pred_val)^2))
+		
+		# Print the evaluation metrics for the validation set
+		cat("Bayesian estimate Validation Set Metrics:\n")
+		cat("Mean Squared Error (MSE): ", mse_val, "\n")
+		cat("Mean Absolute Error (MAE): ", mae_val, "\n")
+		cat("Root Mean Squared Error (RMSE): ", rmse_val, "\n")
+		```
+		
+	\end{lstlisting}
+	
+\end{document}
