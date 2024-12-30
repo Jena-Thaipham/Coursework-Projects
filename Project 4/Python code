@@ -1,0 +1,955 @@
+DataFrame Diabetes Info:
+<class 'pandas.core.frame.DataFrame'>
+RangeIndex: 253680 entries, 0 to 253679
+Data columns (total 22 columns):
+ #   Column                Non-Null Count   Dtype  
+---  ------                --------------   -----  
+ 0   Diabetes_binary       253680 non-null  float64
+ 1   HighBP                253680 non-null  float64
+ 2   HighChol              253680 non-null  float64
+ 3   CholCheck             253680 non-null  float64
+ 4   BMI                   253680 non-null  float64
+ 5   Smoker                253680 non-null  float64
+ 6   Stroke                253680 non-null  float64
+ 7   HeartDiseaseorAttack  253680 non-null  float64
+ 8   PhysActivity          253680 non-null  float64
+ 9   Fruits                253680 non-null  float64
+ 10  Veggies               253680 non-null  float64
+ 11  HvyAlcoholConsump     253680 non-null  float64
+ 12  AnyHealthcare         253680 non-null  float64
+ 13  NoDocbcCost           253680 non-null  float64
+ 14  GenHlth               253680 non-null  float64
+ 15  MentHlth              253680 non-null  float64
+ 16  PhysHlth              253680 non-null  float64
+ 17  DiffWalk              253680 non-null  float64
+ 18  Sex                   253680 non-null  float64
+ 19  Age                   253680 non-null  float64
+ 20  Education             253680 non-null  float64
+ 21  Income                253680 non-null  float64 
+DataFrame Heart Info:
+<class 'pandas.core.frame.DataFrame'>
+RangeIndex: 319795 entries, 0 to 319794
+Data columns (total 18 columns):
+ #   Column            Non-Null Count   Dtype  
+---  ------            --------------   -----  
+ 0   HeartDisease      319795 non-null  object 
+ 1   BMI               319795 non-null  float64
+ 2   Smoking           319795 non-null  object 
+ 3   AlcoholDrinking   319795 non-null  object 
+ 4   Stroke            319795 non-null  object 
+ 5   PhysicalHealth    319795 non-null  float64
+ 6   MentalHealth      319795 non-null  float64
+ 7   DiffWalking       319795 non-null  object 
+ 8   Sex               319795 non-null  object 
+ 9   AgeCategory       319795 non-null  object 
+ 10  Race              319795 non-null  object 
+ 11  Diabetic          319795 non-null  object 
+ 12  PhysicalActivity  319795 non-null  object 
+ 13  GenHealth         319795 non-null  object 
+ 14  SleepTime         319795 non-null  float64
+ 15  Asthma            319795 non-null  object 
+ 16  KidneyDisease     319795 non-null  object 
+ 17  SkinCancer        319795 non-null  object 
+
+# VISUALIZATION
+# Data Diabetes: visualization
+# Distribution of diabetes across different BMI levels
+fig = plt.figure(figsize=(15, 6))
+ax1 = fig.add_subplot(1, 2, 1)
+sns.histplot(data=df_diabetes.loc[(df_diabetes.Diabetes_binary == 0)], x="BMI", hue="Diabetes_binary", kde=True, palette=["red"], ax=ax1)
+plt.axvline(df_diabetes.loc[df_diabetes.Diabetes_binary== 0].BMI.mean(), color="r", linestyle="dashed", linewidth=3)
+ax1.annotate("{:.1f}".format(df_diabetes.loc[df_diabetes.Diabetes_binary == 0].BMI.mean()), xy=(32, 20000),
+             ha="center", va="center", xytext=(0, 10), textcoords="offset points", fontsize=12)
+
+ax2 = fig.add_subplot(1, 2, 2)
+sns.histplot(data=df_diabetes.loc[(df_diabetes.Diabetes_binary > 0)], x="BMI", hue="Diabetes_binary", kde=True, palette=["green", "blue"], ax=ax2)
+plt.axvline(df_diabetes.loc[df_diabetes.Diabetes_binary== 1].BMI.mean(), color="g", linestyle="dashed", linewidth=3)
+ax2.annotate("{:.1f}".format(df_diabetes.loc[df_diabetes.Diabetes_binary== 1].BMI.mean()), xy=(28, 2500),
+             ha="center", va="center", xytext=(0, 10), textcoords="offset points", fontsize=12)
+plt.axvline(df_diabetes.loc[df_diabetes.Diabetes_binary == 2].BMI.mean(), color="b", linestyle="dashed", linewidth=3)
+ax2.annotate("{:.1f}".format(df_diabetes.loc[df_diabetes.Diabetes_binary == 2].BMI.mean()), xy=(36, 2500),
+             ha="center", va="center", xytext=(0, 10), textcoords="offset points", fontsize=12)
+
+plt.show()
+
+
+
+# Distribution of diabetes vs Gender
+cols = ["HighBP", "HighChol", "CholCheck", "Smoker", "Stroke", "HeartDiseaseorAttack", "PhysActivity", "Fruits", "Veggies",
+        "HvyAlcoholConsump", "AnyHealthcare", "NoDocbcCost", "DiffWalk", "Sex"]
+cols3 = [c for c in cols if c not in ["Diabetes_binary", "Sex"]]
+df_groupby_diabetes_and_sex_1 = df_diabetes.loc[df_diabetes.Diabetes_binary == 1].groupby(["Diabetes_binary", "Sex"])[cols3].sum() \
+    .apply(lambda x: x / x.sum(), axis=0)
+cols2 = [c for c in cols if c not in ["Diabetes_binary", "Sex"]]  # Fixed incorrect variable name 'cols2' to 'cols'
+if "BMI" not in cols2:
+    cols2.insert(0, "BMI")
+df_groupby_diabetes_and_sex_2 = df_diabetes.loc[df_diabetes.Diabetes_binary == 1].groupby(["Diabetes_binary", "Sex"])[cols2].mean()
+
+fig = plt.figure(figsize=(12, 8))
+ax1 = fig.add_subplot(1, 2, 1)
+df_groupby_diabetes_and_sex_1.T.plot(kind="bar", ax=ax1)
+ax1.set_title("Patients with Diabetes separated by Gender (0 - Female, 1 - Male)", size=8)
+
+ax2 = fig.add_subplot(1, 2, 2)
+df_groupby_diabetes_and_sex_2.T.plot(kind="bar", ax=ax2)
+ax2.set_title("Patients with Diabetes separated by Gender (0 - Female, 1 - Male)", size=8)
+
+plt.show()
+
+
+# Distribution of Diabetes_binary
+plt.figure(figsize=(8, 6))
+sns.countplot(data=df_diabetes, x='Diabetes_binary')
+plt.title('Distribution of Diabetes_binary')
+plt.show()
+
+# Heatmap
+plt.figure(figsize=(12, 8))
+sns.heatmap(df_diabetes.corr(), annot=True, cmap='coolwarm', fmt=".2f", linewidths=0.5)
+plt.title('Correlation Heatmap of Diabetes Dataset')
+plt.show()
+plt.savefig('Correlation Heatmap of Diabetes Dataset.png')
+
+# Bar plot
+plt.figure(figsize=(8, 6))
+sns.countplot(data=df_diabetes, x='HeartDiseaseorAttack', hue='Diabetes_binary')
+plt.title('Bar Plot of Diabetes_binary by HeartDiseaseorAttack')
+plt.xlabel('HeartDiseaseorAttack')
+plt.ylabel('Count')
+plt.show()
+plt.savefig('Bar Plot of Diabetes_binary by HeartDiseaseorAttack.png')
+
+
+
+# Data Heart Disease: visualization
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Selecting relevant columns
+heart_factors = df_heart[['BMI', 'Smoking', 'AlcoholDrinking', 'PhysicalActivity', 'SleepTime']]
+
+# Converting categorical variables to numeric for visualization
+heart_factors['Smoking'] = heart_factors['Smoking'].replace({'Yes': 1, 'No': 0})
+heart_factors['AlcoholDrinking'] = heart_factors['AlcoholDrinking'].replace({'Yes': 1, 'No': 0})
+heart_factors['PhysicalActivity'] = heart_factors['PhysicalActivity'].replace({'Yes': 1, 'No': 0})
+
+# Plotting line plots for each factor
+plt.figure(figsize=(12, 8))
+sns.lineplot(data=heart_factors, dashes=False)
+
+# Adding labels and title
+plt.xlabel('Samples')
+plt.ylabel('Values')
+plt.title('Factors Influencing Heart Disease')
+plt.legend(title='Factors', labels=['BMI', 'Smoking', 'Alcohol Drinking', 'Physical Activity', 'Sleep Time'])
+plt.show()
+
+# Distribution of HeartDisease
+plt.figure(figsize=(8, 6))
+sns.countplot(data=df_heart, x='HeartDisease')
+plt.title('Distribution of HeartDisease')
+plt.show()
+plt.savefig('Distribution of HeartDisease.png')
+
+# Select numeric columns for correlation calculation
+numeric_columns_heart = df_heart.select_dtypes(include=np.number)
+
+# Create a heatmap for correlations in the Heart DataFrame
+plt.figure(figsize=(12, 10))
+sns.heatmap(numeric_columns_heart.corr(), annot=True, cmap='coolwarm', fmt=".2f", linewidths=.5)
+plt.title('Correlation Heatmap of Heart DataFrame')
+plt.show()
+plt.savefig('Correlation Heatmap of Heart DataFrame.png')
+
+# Bar plot
+plt.figure(figsize=(8, 6))
+sns.countplot(data=df_heart, x='HeartDisease', hue='Diabetic')
+plt.title('Bar Plot of Diabetic by HeartDisease')
+plt.xlabel('HeartDisease')
+plt.ylabel('Count')
+plt.show()
+plt.savefig('Bar Plot of Diabetic by HeartDisease.png')
+
+
+MODEL
+# Model 1: Fit Separate model for each dataset using Random Forest Classifier algorithm
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+
+# Fit RandomForestClassifier to diabetes dataset
+rf_diabetes = RandomForestClassifier(random_state=42)
+rf_diabetes.fit(X_diabetes_train, y_diabetes_train)
+
+# Evaluate model on test set
+y_diabetes_pred = rf_diabetes.predict(X_diabetes_test)
+
+# Calculate evaluation metrics
+accuracy_diabetes = accuracy_score(y_diabetes_test, y_diabetes_pred)
+precision_diabetes = precision_score(y_diabetes_test, y_diabetes_pred)
+recall_diabetes = recall_score(y_diabetes_test, y_diabetes_pred)
+f1_diabetes = f1_score(y_diabetes_test, y_diabetes_pred)
+
+# Print model and metrics for diabetes dataset
+print("Diabetes Model:")
+print(rf_diabetes)
+print("\nMetrics:")
+print("Accuracy:", accuracy_diabetes)
+print("Precision:", precision_diabetes)
+print("Recall:", recall_diabetes)
+print("F1 Score:", f1_diabetes)
+
+# Fit RandomForestClassifier to heart disease dataset
+rf_heart = RandomForestClassifier(random_state=42)
+rf_heart.fit(X_heart_train, y_heart_train)
+
+# Evaluate model on test set
+y_heart_pred = rf_heart.predict(X_heart_test)
+
+# Calculate evaluation metrics
+accuracy_heart = accuracy_score(y_heart_test, y_heart_pred)
+precision_heart = precision_score(y_heart_test, y_heart_pred)
+recall_heart = recall_score(y_heart_test, y_heart_pred)
+f1_heart = f1_score(y_heart_test, y_heart_pred)
+
+# Print model and metrics for heart disease dataset
+print("\nHeart Disease Model:")
+print(rf_heart)
+print("\nMetrics:")
+print("Accuracy:", accuracy_heart)
+print("Precision:", precision_heart)
+print("Recall:", recall_heart)
+print("F1 Score:", f1_heart)
+
+# Model 2: Multi-input Neural networks using Adam optimizer with different configurations
+best_accuracy = 0
+best_model = None
+best_metrics = None
+best_configuration = None
+all_results = []
+
+# Define configurations of number of layers and number of units
+configurations = [(1, 10), (2, 10), (3, 10), (1, 20), (2, 20), (3, 20)]
+
+for num_layers, num_units in configurations:
+    # Create the model
+    input_diabetes = Input(shape=(input_dim_diabetes,))
+    input_heart = Input(shape=(input_dim_heart,))
+    hidden_diabetes = Dense(num_units, activation='relu')(input_diabetes)
+    hidden_heart = Dense(num_units, activation='relu')(input_heart)
+    concatenated = Concatenate()([hidden_diabetes, hidden_heart])
+    output = Dense(1, activation='sigmoid')(concatenated)
+    model = Model(inputs=[input_diabetes, input_heart], outputs=output)
+
+    # Compile the model
+    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+
+    # Train the model
+    model.fit([X_diabetes_train, X_heart_train], [y_diabetes_train, y_heart_train], epochs=10, batch_size=64,
+              validation_data=([X_diabetes_test, X_heart_test], [y_diabetes_test, y_heart_test]), verbose=0)
+
+    # Evaluate model
+    # Predict classes for test data
+    y_pred = model.predict([X_diabetes_test, X_heart_test])
+
+    # Convert probabilities to binary predictions
+    y_pred_binary = [1 if pred > 0.5 else 0 for pred in y_pred]
+
+    # Calculate evaluation metrics for Diabetes dataset
+    accuracy_diabetes = accuracy_score(y_diabetes_test, y_pred_binary)
+    precision_diabetes = precision_score(y_diabetes_test, y_pred_binary)
+    recall_diabetes = recall_score(y_diabetes_test, y_pred_binary)
+    f1_diabetes = f1_score(y_diabetes_test, y_pred_binary)
+    conf_matrix_diabetes = confusion_matrix(y_diabetes_test, y_pred_binary)
+
+    # Calculate evaluation metrics for Heart dataset
+    accuracy_heart = accuracy_score(y_heart_test, y_pred_binary)
+    precision_heart = precision_score(y_heart_test, y_pred_binary)
+    recall_heart = recall_score(y_heart_test, y_pred_binary)
+    f1_heart = f1_score(y_heart_test, y_pred_binary)
+    conf_matrix_heart = confusion_matrix(y_heart_test, y_pred_binary)
+
+    # Calculate combined accuracy
+    combined_accuracy = (accuracy_diabetes + accuracy_heart) / 2
+
+    # Save the results of this configuration
+    results = {
+        "num_layers": num_layers,
+        "num_units": num_units,
+        "accuracy_diabetes": accuracy_diabetes,
+        "precision_diabetes": precision_diabetes,
+        "recall_diabetes": recall_diabetes,
+        "f1_diabetes": f1_diabetes,
+        "conf_matrix_diabetes": conf_matrix_diabetes,
+        "accuracy_heart": accuracy_heart,
+        "precision_heart": precision_heart,
+        "recall_heart": recall_heart,
+        "f1_heart": f1_heart,
+        "conf_matrix_heart": conf_matrix_heart,
+        "combined_accuracy": combined_accuracy
+    }
+    all_results.append(results)
+
+    # Check if this model has the best accuracy so far
+    if combined_accuracy > best_accuracy:
+        best_accuracy = combined_accuracy
+        best_model = model
+        best_metrics = results
+        best_configuration = (num_layers, num_units)
+
+# Print the best model's configuration and evaluation metrics
+print("Best Configuration:", best_configuration)
+print("Best Combined Accuracy:", best_accuracy)
+print("Evaluation Metrics for Diabetes Dataset:")
+print("Accuracy:", best_metrics["accuracy_diabetes"])
+print("Precision:", best_metrics["precision_diabetes"])
+print("Recall:", best_metrics["recall_diabetes"])
+print("F1-score:", best_metrics["f1_diabetes"])
+print("Confusion Matrix:")
+print(best_metrics["conf_matrix_diabetes"])
+print()
+
+# Print evaluation metrics for Heart dataset
+print("Evaluation Metrics for Heart Dataset:")
+print("Accuracy:", best_metrics["accuracy_heart"])
+print("Precision:", best_metrics["precision_heart"])
+print("Recall:", best_metrics["recall_heart"])
+print("F1-score:", best_metrics["f1_heart"])
+print("Confusion Matrix:")
+print(best_metrics["conf_matrix_heart"])
+
+# Model 3: Multi-input Neural networks using SGD optimizer with different configurations
+best_accuracy = 0
+best_model = None
+best_metrics = None
+best_configuration = None
+all_results = []
+
+# Define configurations of number of layers and number of units
+configurations = [(1, 10), (2, 10), (3, 10), (1, 20), (2, 20), (3, 20)]
+
+for num_layers, num_units in configurations:
+    # Create the model
+    input_diabetes = Input(shape=(input_dim_diabetes,))
+    input_heart = Input(shape=(input_dim_heart,))
+    hidden_diabetes = Dense(num_units, activation='relu')(input_diabetes)
+    hidden_heart = Dense(num_units, activation='relu')(input_heart)
+    concatenated = Concatenate()([hidden_diabetes, hidden_heart])
+    output = Dense(1, activation='sigmoid')(concatenated)
+    model = Model(inputs=[input_diabetes, input_heart], outputs=output)
+
+    # Compile the model with SGD optimizer
+    model.compile(optimizer=SGD(), loss='binary_crossentropy', metrics=['accuracy'])
+
+    # Train the model
+    model.fit([X_diabetes_train, X_heart_train], [y_diabetes_train, y_heart_train], epochs=10, batch_size=64,
+              validation_data=([X_diabetes_test, X_heart_test], [y_diabetes_test, y_heart_test]), verbose=0)
+
+    # Evaluate model
+    # Predict classes for test data
+    y_pred = model.predict([X_diabetes_test, X_heart_test])
+
+    # Convert probabilities to binary predictions
+    y_pred_binary = [1 if pred > 0.5 else 0 for pred in y_pred]
+
+    # Calculate evaluation metrics for Diabetes dataset
+    accuracy_diabetes = accuracy_score(y_diabetes_test, y_pred_binary)
+    precision_diabetes = precision_score(y_diabetes_test, y_pred_binary)
+    recall_diabetes = recall_score(y_diabetes_test, y_pred_binary)
+    f1_diabetes = f1_score(y_diabetes_test, y_pred_binary)
+    conf_matrix_diabetes = confusion_matrix(y_diabetes_test, y_pred_binary)
+
+    # Calculate evaluation metrics for Heart dataset
+    accuracy_heart = accuracy_score(y_heart_test, y_pred_binary)
+    precision_heart = precision_score(y_heart_test, y_pred_binary)
+    recall_heart = recall_score(y_heart_test, y_pred_binary)
+    f1_heart = f1_score(y_heart_test, y_pred_binary)
+    conf_matrix_heart = confusion_matrix(y_heart_test, y_pred_binary)
+
+    # Calculate combined accuracy
+    combined_accuracy = (accuracy_diabetes + accuracy_heart) / 2
+
+    # Save the results of this configuration
+    results = {
+        "num_layers": num_layers,
+        "num_units": num_units,
+        "accuracy_diabetes": accuracy_diabetes,
+        "precision_diabetes": precision_diabetes,
+        "recall_diabetes": recall_diabetes,
+        "f1_diabetes": f1_diabetes,
+        "conf_matrix_diabetes": conf_matrix_diabetes,
+        "accuracy_heart": accuracy_heart,
+        "precision_heart": precision_heart,
+        "recall_heart": recall_heart,
+        "f1_heart": f1_heart,
+        "conf_matrix_heart": conf_matrix_heart,
+        "combined_accuracy": combined_accuracy
+    }
+    all_results.append(results)
+
+    # Check if this model has the best accuracy so far
+    if combined_accuracy > best_accuracy:
+        best_accuracy = combined_accuracy
+        best_model = model
+        best_metrics = results
+        best_configuration = (num_layers, num_units)
+
+# Print the best model's configuration and evaluation metrics
+print("Best Configuration:", best_configuration)
+print("Best Combined Accuracy:", best_accuracy)
+print("Evaluation Metrics for Diabetes Dataset:")
+print("Accuracy:", best_metrics["accuracy_diabetes"])
+print("Precision:", best_metrics["precision_diabetes"])
+print("Recall:", best_metrics["recall_diabetes"])
+print("F1-score:", best_metrics["f1_diabetes"])
+print("Confusion Matrix:")
+print(best_metrics["conf_matrix_diabetes"])
+print()
+
+# Print evaluation metrics for Heart dataset
+print("Evaluation Metrics for Heart Dataset:")
+print("Accuracy:", best_metrics["accuracy_heart"])
+print("Precision:", best_metrics["precision_heart"])
+print("Recall:", best_metrics["recall_heart"])
+print("F1-score:", best_metrics["f1_heart"])
+print("Confusion Matrix:")
+print(best_metrics["conf_matrix_heart"])
+
+# Model 4: Multi-input Neural networks using RMSprop optimizer with different configurations
+best_accuracy = 0
+best_model = None
+best_metrics = None
+best_configuration = None
+all_results = []
+
+# Define configurations of number of layers and number of units
+configurations = [(1, 10), (2, 10), (3, 10), (1, 20), (2, 20), (3, 20)]
+
+for num_layers, num_units in configurations:
+    # Create the model
+    input_diabetes = Input(shape=(input_dim_diabetes,))
+    input_heart = Input(shape=(input_dim_heart,))
+    hidden_diabetes = Dense(num_units, activation='relu')(input_diabetes)
+    hidden_heart = Dense(num_units, activation='relu')(input_heart)
+    concatenated = Concatenate()([hidden_diabetes, hidden_heart])
+    output = Dense(1, activation='sigmoid')(concatenated)
+    model = Model(inputs=[input_diabetes, input_heart], outputs=output)
+
+    # Compile the model with SGD optimizer
+    model.compile(optimizer=RMSprop(), loss='binary_crossentropy', metrics=['accuracy'])
+
+    # Train the model
+    model.fit([X_diabetes_train, X_heart_train], [y_diabetes_train, y_heart_train], epochs=10, batch_size=64,
+              validation_data=([X_diabetes_test, X_heart_test], [y_diabetes_test, y_heart_test]), verbose=0)
+
+    # Evaluate model
+    # Predict classes for test data
+    y_pred = model.predict([X_diabetes_test, X_heart_test])
+
+    # Convert probabilities to binary predictions
+    y_pred_binary = [1 if pred > 0.5 else 0 for pred in y_pred]
+
+    # Calculate evaluation metrics for Diabetes dataset
+    accuracy_diabetes = accuracy_score(y_diabetes_test, y_pred_binary)
+    precision_diabetes = precision_score(y_diabetes_test, y_pred_binary)
+    recall_diabetes = recall_score(y_diabetes_test, y_pred_binary)
+    f1_diabetes = f1_score(y_diabetes_test, y_pred_binary)
+    conf_matrix_diabetes = confusion_matrix(y_diabetes_test, y_pred_binary)
+
+    # Calculate evaluation metrics for Heart dataset
+    accuracy_heart = accuracy_score(y_heart_test, y_pred_binary)
+    precision_heart = precision_score(y_heart_test, y_pred_binary)
+    recall_heart = recall_score(y_heart_test, y_pred_binary)
+    f1_heart = f1_score(y_heart_test, y_pred_binary)
+    conf_matrix_heart = confusion_matrix(y_heart_test, y_pred_binary)
+
+    # Calculate combined accuracy
+    combined_accuracy = (accuracy_diabetes + accuracy_heart) / 2
+
+    # Save the results of this configuration
+    results = {
+        "num_layers": num_layers,
+        "num_units": num_units,
+        "accuracy_diabetes": accuracy_diabetes,
+        "precision_diabetes": precision_diabetes,
+        "recall_diabetes": recall_diabetes,
+        "f1_diabetes": f1_diabetes,
+        "conf_matrix_diabetes": conf_matrix_diabetes,
+        "accuracy_heart": accuracy_heart,
+        "precision_heart": precision_heart,
+        "recall_heart": recall_heart,
+        "f1_heart": f1_heart,
+        "conf_matrix_heart": conf_matrix_heart,
+        "combined_accuracy": combined_accuracy
+    }
+    all_results.append(results)
+
+    # Check if this model has the best accuracy so far
+    if combined_accuracy > best_accuracy:
+        best_accuracy = combined_accuracy
+        best_model = model
+        best_metrics = results
+        best_configuration = (num_layers, num_units)
+
+# Print the best model's configuration and evaluation metrics
+print("Best Configuration:", best_configuration)
+print("Best Combined Accuracy:", best_accuracy)
+print("Evaluation Metrics for Diabetes Dataset:")
+print("Accuracy:", best_metrics["accuracy_diabetes"])
+print("Precision:", best_metrics["precision_diabetes"])
+print("Recall:", best_metrics["recall_diabetes"])
+print("F1-score:", best_metrics["f1_diabetes"])
+print("Confusion Matrix:")
+print(best_metrics["conf_matrix_diabetes"])
+print()
+
+# Print evaluation metrics for Heart dataset
+print("Evaluation Metrics for Heart Dataset:")
+print("Accuracy:", best_metrics["accuracy_heart"])
+print("Precision:", best_metrics["precision_heart"])
+print("Recall:", best_metrics["recall_heart"])
+print("F1-score:", best_metrics["f1_heart"])
+print("Confusion Matrix:")
+print(best_metrics["conf_matrix_heart"])
+
+
+
+
+
+
+# FIT MODEL
+# Set up for multi-input Neural Networks
+# Randomly sample the larger dataset to match the number of samples in the smaller dataset
+df_heart_sampled = df_heart.sample(n=len(df_diabetes), random_state=42)
+
+# Define X_diabetes and y_diabetes
+X_diabetes = df_diabetes.drop(columns=['Diabetes_binary'])
+y_diabetes = df_diabetes['Diabetes_binary']
+
+# Define X_heart and y_heart
+X_heart = df_heart_sampled.drop(columns=['HeartDisease'])
+y_heart = df_heart_sampled['HeartDisease']
+
+
+# Split the data into train and test sets for each dataset
+X_diabetes_train, X_diabetes_test, y_diabetes_train, y_diabetes_test = train_test_split(X_diabetes.values,
+                                                                                        y_diabetes.values,
+                                                                                    test_size=0.2, random_state=42)
+X_heart_train, X_heart_test, y_heart_train, y_heart_test = train_test_split(X_heart.values,
+                                                                            y_heart.values,
+                                                                            test_size=0.2, random_state=42)
+
+
+
+
+# Define the dimensions of input and output for each dataset
+input_dim_diabetes = len(df_diabetes.columns) - 1
+input_dim_heart = len(df_heart_sampled.columns) - 1
+output_dim = 1
+
+# Define input layers for each dataset
+input_diabetes = Input(shape=(input_dim_diabetes,))
+input_heart = Input(shape=(input_dim_heart,))
+
+# Define neural network layers for each dataset
+hidden_diabetes = Dense(10, activation='relu')(input_diabetes)
+hidden_heart = Dense(10, activation='relu')(input_heart)
+
+# Concatenate the outputs of the neural network layers
+concatenated = Concatenate()([hidden_diabetes, hidden_heart])
+
+# Define output layer
+output = Dense(1, activation='sigmoid')(concatenated)
+
+
+
+
+Model 2:
+# 2. Multi-Neural network with Adam optimizer
+# Create the model
+model = Model(inputs=[input_diabetes, input_heart], outputs=output)
+
+# Compile the model
+model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+
+# Train the model
+model.fit([X_diabetes_train, X_heart_train], [y_diabetes_train, y_heart_train],epochs=10, batch_size=64,
+          validation_data=([X_diabetes_test, X_heart_test], [y_diabetes_test, y_heart_test]))
+
+# Evaluate model
+# Predict classes for test data
+y_pred = model.predict([X_diabetes_test, X_heart_test])
+
+# Convert probabilities to binary predictions
+y_pred_binary = [1 if pred > 0.5 else 0 for pred in y_pred]
+
+# Calculate evaluation metrics for Diabetes dataset
+accuracy_diabetes = accuracy_score(y_diabetes_test, y_pred_binary)
+precision_diabetes = precision_score(y_diabetes_test, y_pred_binary)
+recall_diabetes = recall_score(y_diabetes_test, y_pred_binary)
+f1_diabetes = f1_score(y_diabetes_test, y_pred_binary)
+conf_matrix_diabetes = confusion_matrix(y_diabetes_test, y_pred_binary)
+
+# Print evaluation metrics for Diabetes dataset
+print("Evaluation Metrics for Diabetes Dataset:")
+print("Accuracy:", accuracy_diabetes)
+print("Precision:", precision_diabetes)
+print("Recall:", recall_diabetes)
+print("F1-score:", f1_diabetes)
+print("Confusion Matrix:")
+print(conf_matrix_diabetes)
+
+# Calculate evaluation metrics for Heart dataset
+accuracy_heart = accuracy_score(y_heart_test, y_pred_binary)
+precision_heart = precision_score(y_heart_test, y_pred_binary)
+recall_heart = recall_score(y_heart_test, y_pred_binary)
+f1_heart = f1_score(y_heart_test, y_pred_binary)
+conf_matrix_heart = confusion_matrix(y_heart_test, y_pred_binary)
+
+# Print evaluation metrics for Heart dataset
+print("\nEvaluation Metrics for Heart Dataset:")
+print("Accuracy:", accuracy_heart)
+print("Precision:", precision_heart)
+print("Recall:", recall_heart)
+print("F1-score:", f1_heart)
+print("Confusion Matrix:")
+print(conf_matrix_heart)
+
+Model 3:
+# Model 3: Model 2 with different configurations
+best_accuracy = 0
+best_model = None
+best_metrics = None
+best_configuration = None
+all_results = []
+
+# Define configurations of number of layers and number of units
+configurations = [(1, 10), (2, 10), (3, 10), (1, 20), (2, 20), (3, 20)]
+
+for num_layers, num_units in configurations:
+    # Create the model
+    input_diabetes = Input(shape=(input_dim_diabetes,))
+    input_heart = Input(shape=(input_dim_heart,))
+    hidden_diabetes = Dense(num_units, activation='relu')(input_diabetes)
+    hidden_heart = Dense(num_units, activation='relu')(input_heart)
+    concatenated = Concatenate()([hidden_diabetes, hidden_heart])
+    output = Dense(1, activation='sigmoid')(concatenated)
+    model = Model(inputs=[input_diabetes, input_heart], outputs=output)
+
+    # Compile the model
+    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+
+    # Train the model
+    model.fit([X_diabetes_train, X_heart_train], [y_diabetes_train, y_heart_train], epochs=10, batch_size=64,
+              validation_data=([X_diabetes_test, X_heart_test], [y_diabetes_test, y_heart_test]), verbose=0)
+
+    # Evaluate model
+    # Predict classes for test data
+    y_pred = model.predict([X_diabetes_test, X_heart_test])
+
+    # Convert probabilities to binary predictions
+    y_pred_binary = [1 if pred > 0.5 else 0 for pred in y_pred]
+
+    # Calculate evaluation metrics for Diabetes dataset
+    accuracy_diabetes = accuracy_score(y_diabetes_test, y_pred_binary)
+    precision_diabetes = precision_score(y_diabetes_test, y_pred_binary)
+    recall_diabetes = recall_score(y_diabetes_test, y_pred_binary)
+    f1_diabetes = f1_score(y_diabetes_test, y_pred_binary)
+    conf_matrix_diabetes = confusion_matrix(y_diabetes_test, y_pred_binary)
+
+    # Calculate evaluation metrics for Heart dataset
+    accuracy_heart = accuracy_score(y_heart_test, y_pred_binary)
+    precision_heart = precision_score(y_heart_test, y_pred_binary)
+    recall_heart = recall_score(y_heart_test, y_pred_binary)
+    f1_heart = f1_score(y_heart_test, y_pred_binary)
+    conf_matrix_heart = confusion_matrix(y_heart_test, y_pred_binary)
+
+    # Calculate combined accuracy
+    combined_accuracy = (accuracy_diabetes + accuracy_heart) / 2
+
+    # Save the results of this configuration
+    results = {
+        "num_layers": num_layers,
+        "num_units": num_units,
+        "accuracy_diabetes": accuracy_diabetes,
+        "precision_diabetes": precision_diabetes,
+        "recall_diabetes": recall_diabetes,
+        "f1_diabetes": f1_diabetes,
+        "conf_matrix_diabetes": conf_matrix_diabetes,
+        "accuracy_heart": accuracy_heart,
+        "precision_heart": precision_heart,
+        "recall_heart": recall_heart,
+        "f1_heart": f1_heart,
+        "conf_matrix_heart": conf_matrix_heart,
+        "combined_accuracy": combined_accuracy
+    }
+    all_results.append(results)
+
+    # Check if this model has the best accuracy so far
+    if combined_accuracy > best_accuracy:
+        best_accuracy = combined_accuracy
+        best_model = model
+        best_metrics = results
+        best_configuration = (num_layers, num_units)
+
+# Print the best model's configuration and evaluation metrics
+print("Best Configuration:", best_configuration)
+print("Best Combined Accuracy:", best_accuracy)
+print("Evaluation Metrics for Diabetes Dataset:")
+print("Accuracy:", best_metrics["accuracy_diabetes"])
+print("Precision:", best_metrics["precision_diabetes"])
+print("Recall:", best_metrics["recall_diabetes"])
+print("F1-score:", best_metrics["f1_diabetes"])
+print("Confusion Matrix:")
+print(best_metrics["conf_matrix_diabetes"])
+print()
+
+# Print evaluation metrics for Heart dataset
+print("Evaluation Metrics for Heart Dataset:")
+print("Accuracy:", best_metrics["accuracy_heart"])
+print("Precision:", best_metrics["precision_heart"])
+print("Recall:", best_metrics["recall_heart"])
+print("F1-score:", best_metrics["f1_heart"])
+print("Confusion Matrix:")
+print(best_metrics["conf_matrix_heart"])
+
+
+Model 4:
+# Model 4: Multi-input Neural networks with SGD optimizer using different configurations
+best_accuracy = 0
+best_model = None
+best_metrics = None
+best_configuration = None
+all_results = []
+
+# Define configurations of number of layers and number of units
+configurations = [(1, 10), (2, 10), (3, 10), (1, 20), (2, 20), (3, 20)]
+
+for num_layers, num_units in configurations:
+    # Create the model
+    input_diabetes = Input(shape=(input_dim_diabetes,))
+    input_heart = Input(shape=(input_dim_heart,))
+    hidden_diabetes = Dense(num_units, activation='relu')(input_diabetes)
+    hidden_heart = Dense(num_units, activation='relu')(input_heart)
+    concatenated = Concatenate()([hidden_diabetes, hidden_heart])
+    output = Dense(1, activation='sigmoid')(concatenated)
+    model = Model(inputs=[input_diabetes, input_heart], outputs=output)
+
+    # Compile the model with SGD optimizer
+    model.compile(optimizer=SGD(), loss='binary_crossentropy', metrics=['accuracy'])
+
+    # Train the model
+    model.fit([X_diabetes_train, X_heart_train], [y_diabetes_train, y_heart_train], epochs=10, batch_size=64,
+              validation_data=([X_diabetes_test, X_heart_test], [y_diabetes_test, y_heart_test]), verbose=0)
+
+    # Evaluate model
+    # Predict classes for test data
+    y_pred = model.predict([X_diabetes_test, X_heart_test])
+
+    # Convert probabilities to binary predictions
+    y_pred_binary = [1 if pred > 0.5 else 0 for pred in y_pred]
+
+    # Calculate evaluation metrics for Diabetes dataset
+    accuracy_diabetes = accuracy_score(y_diabetes_test, y_pred_binary)
+    precision_diabetes = precision_score(y_diabetes_test, y_pred_binary)
+    recall_diabetes = recall_score(y_diabetes_test, y_pred_binary)
+    f1_diabetes = f1_score(y_diabetes_test, y_pred_binary)
+    conf_matrix_diabetes = confusion_matrix(y_diabetes_test, y_pred_binary)
+
+    # Calculate evaluation metrics for Heart dataset
+    accuracy_heart = accuracy_score(y_heart_test, y_pred_binary)
+    precision_heart = precision_score(y_heart_test, y_pred_binary)
+    recall_heart = recall_score(y_heart_test, y_pred_binary)
+    f1_heart = f1_score(y_heart_test, y_pred_binary)
+    conf_matrix_heart = confusion_matrix(y_heart_test, y_pred_binary)
+
+    # Calculate combined accuracy
+    combined_accuracy = (accuracy_diabetes + accuracy_heart) / 2
+
+    # Save the results of this configuration
+    results = {
+        "num_layers": num_layers,
+        "num_units": num_units,
+        "accuracy_diabetes": accuracy_diabetes,
+        "precision_diabetes": precision_diabetes,
+        "recall_diabetes": recall_diabetes,
+        "f1_diabetes": f1_diabetes,
+        "conf_matrix_diabetes": conf_matrix_diabetes,
+        "accuracy_heart": accuracy_heart,
+        "precision_heart": precision_heart,
+        "recall_heart": recall_heart,
+        "f1_heart": f1_heart,
+        "conf_matrix_heart": conf_matrix_heart,
+        "combined_accuracy": combined_accuracy
+    }
+    all_results.append(results)
+
+    # Check if this model has the best accuracy so far
+    if combined_accuracy > best_accuracy:
+        best_accuracy = combined_accuracy
+        best_model = model
+        best_metrics = results
+        best_configuration = (num_layers, num_units)
+
+# Print the best model's configuration and evaluation metrics
+print("Best Configuration:", best_configuration)
+print("Best Combined Accuracy:", best_accuracy)
+print("Evaluation Metrics for Diabetes Dataset:")
+print("Accuracy:", best_metrics["accuracy_diabetes"])
+print("Precision:", best_metrics["precision_diabetes"])
+print("Recall:", best_metrics["recall_diabetes"])
+print("F1-score:", best_metrics["f1_diabetes"])
+print("Confusion Matrix:")
+print(best_metrics["conf_matrix_diabetes"])
+print()
+
+# Print evaluation metrics for Heart dataset
+print("Evaluation Metrics for Heart Dataset:")
+print("Accuracy:", best_metrics["accuracy_heart"])
+print("Precision:", best_metrics["precision_heart"])
+print("Recall:", best_metrics["recall_heart"])
+print("F1-score:", best_metrics["f1_heart"])
+print("Confusion Matrix:")
+print(best_metrics["conf_matrix_heart"])
+
+Model 5: 
+# Model 5: Multi-input Neural networks with RMSprop optimizer using different configurations
+best_accuracy = 0
+best_model = None
+best_metrics = None
+best_configuration = None
+all_results = []
+
+# Define configurations of number of layers and number of units
+configurations = [(1, 10), (2, 10), (3, 10), (1, 20), (2, 20), (3, 20)]
+
+for num_layers, num_units in configurations:
+    # Create the model
+    input_diabetes = Input(shape=(input_dim_diabetes,))
+    input_heart = Input(shape=(input_dim_heart,))
+    hidden_diabetes = Dense(num_units, activation='relu')(input_diabetes)
+    hidden_heart = Dense(num_units, activation='relu')(input_heart)
+    concatenated = Concatenate()([hidden_diabetes, hidden_heart])
+    output = Dense(1, activation='sigmoid')(concatenated)
+    model = Model(inputs=[input_diabetes, input_heart], outputs=output)
+
+    # Compile the model with SGD optimizer
+    model.compile(optimizer=RMSprop(), loss='binary_crossentropy', metrics=['accuracy'])
+
+    # Train the model
+    model.fit([X_diabetes_train, X_heart_train], [y_diabetes_train, y_heart_train], epochs=10, batch_size=64,
+              validation_data=([X_diabetes_test, X_heart_test], [y_diabetes_test, y_heart_test]), verbose=0)
+
+    # Evaluate model
+    # Predict classes for test data
+    y_pred = model.predict([X_diabetes_test, X_heart_test])
+
+    # Convert probabilities to binary predictions
+    y_pred_binary = [1 if pred > 0.5 else 0 for pred in y_pred]
+
+    # Calculate evaluation metrics for Diabetes dataset
+    accuracy_diabetes = accuracy_score(y_diabetes_test, y_pred_binary)
+    precision_diabetes = precision_score(y_diabetes_test, y_pred_binary)
+    recall_diabetes = recall_score(y_diabetes_test, y_pred_binary)
+    f1_diabetes = f1_score(y_diabetes_test, y_pred_binary)
+    conf_matrix_diabetes = confusion_matrix(y_diabetes_test, y_pred_binary)
+
+    # Calculate evaluation metrics for Heart dataset
+    accuracy_heart = accuracy_score(y_heart_test, y_pred_binary)
+    precision_heart = precision_score(y_heart_test, y_pred_binary)
+    recall_heart = recall_score(y_heart_test, y_pred_binary)
+    f1_heart = f1_score(y_heart_test, y_pred_binary)
+    conf_matrix_heart = confusion_matrix(y_heart_test, y_pred_binary)
+
+    # Calculate combined accuracy
+    combined_accuracy = (accuracy_diabetes + accuracy_heart) / 2
+
+    # Save the results of this configuration
+    results = {
+        "num_layers": num_layers,
+        "num_units": num_units,
+        "accuracy_diabetes": accuracy_diabetes,
+        "precision_diabetes": precision_diabetes,
+        "recall_diabetes": recall_diabetes,
+        "f1_diabetes": f1_diabetes,
+        "conf_matrix_diabetes": conf_matrix_diabetes,
+        "accuracy_heart": accuracy_heart,
+        "precision_heart": precision_heart,
+        "recall_heart": recall_heart,
+        "f1_heart": f1_heart,
+        "conf_matrix_heart": conf_matrix_heart,
+        "combined_accuracy": combined_accuracy
+    }
+    all_results.append(results)
+
+    # Check if this model has the best accuracy so far
+    if combined_accuracy > best_accuracy:
+        best_accuracy = combined_accuracy
+        best_model = model
+        best_metrics = results
+        best_configuration = (num_layers, num_units)
+
+# Print the best model's configuration and evaluation metrics
+print("Best Configuration:", best_configuration)
+print("Best Combined Accuracy:", best_accuracy)
+print("Evaluation Metrics for Diabetes Dataset:")
+print("Accuracy:", best_metrics["accuracy_diabetes"])
+print("Precision:", best_metrics["precision_diabetes"])
+print("Recall:", best_metrics["recall_diabetes"])
+print("F1-score:", best_metrics["f1_diabetes"])
+print("Confusion Matrix:")
+print(best_metrics["conf_matrix_diabetes"])
+print()
+
+# Print evaluation metrics for Heart dataset
+print("Evaluation Metrics for Heart Dataset:")
+print("Accuracy:", best_metrics["accuracy_heart"])
+print("Precision:", best_metrics["precision_heart"])
+print("Recall:", best_metrics["recall_heart"])
+print("F1-score:", best_metrics["f1_heart"])
+print("Confusion Matrix:")
+print(best_metrics["conf_matrix_heart"])
+
+
+
+Model 6. GBC
+# Define and fit Gradient Boosting Classifier for Diabetes dataset
+gb_diabetes = GradientBoostingClassifier(random_state=42)
+gb_diabetes_scores = cross_val_score(gb_diabetes, X_diabetes_train, y_diabetes_train, cv=5)
+gb_diabetes.fit(X_diabetes_train, y_diabetes_train)
+
+# Evaluate performance on test set for Diabetes dataset
+y_diabetes_pred = gb_diabetes.predict(X_diabetes_test)
+accuracy_diabetes = accuracy_score(y_diabetes_test, y_diabetes_pred)
+precision_diabetes = precision_score(y_diabetes_test, y_diabetes_pred)
+recall_diabetes = recall_score(y_diabetes_test, y_diabetes_pred)
+f1_diabetes = f1_score(y_diabetes_test, y_diabetes_pred)
+
+# Print metrics for Diabetes dataset
+print("Diabetes Dataset Metrics:")
+print("Accuracy:", accuracy_diabetes)
+print("Precision:", precision_diabetes)
+print("Recall:", recall_diabetes)
+print("F1-score:", f1_diabetes)
+print("Cross-Validation Scores:", gb_diabetes_scores)
+print()
+
+# Define and fit Gradient Boosting Classifier for Heart dataset
+gb_heart = GradientBoostingClassifier(random_state=42)
+gb_heart_scores = cross_val_score(gb_heart, X_heart_train, y_heart_train, cv=5)
+gb_heart.fit(X_heart_train, y_heart_train)
+
+# Evaluate performance on test set for Heart dataset
+y_heart_pred = gb_heart.predict(X_heart_test)
+accuracy_heart = accuracy_score(y_heart_test, y_heart_pred)
+precision_heart = precision_score(y_heart_test, y_heart_pred)
+recall_heart = recall_score(y_heart_test, y_heart_pred)
+f1_heart = f1_score(y_heart_test, y_heart_pred)
+
+# Print metrics for Heart dataset
+print("Heart Dataset Metrics:")
+print("Accuracy:", accuracy_heart)
+print("Precision:", precision_heart)
+print("Recall:", recall_heart)
+print("F1-score:", f1_heart)
+print("Cross-Validation Scores:", gb_heart_scores)
+
