@@ -1,0 +1,1270 @@
+\documentclass[12pt,doublespace]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{setspace}
+\doublespacing
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{subfig}
+\usepackage{listings}
+\usepackage{xcolor}
+
+% R code color settings
+\lstset{
+	language=R,
+	basicstyle=\small\ttfamily,
+	commentstyle=\color{green},
+	keywordstyle=\color{blue},
+	stringstyle=\color{purple},
+	showstringspaces=false,
+	numbers=left,
+	numberstyle=\tiny\color{gray},
+	stepnumber=1,
+	numbersep=5pt,
+	breaklines=true,
+	breakatwhitespace=false,
+	tabsize=4,
+	morekeywords={data,frame}
+}
+
+\begin{document}
+	\title{ STAT 5320 - FINAL PROJECT}
+	\author{Pham Thi Thai - T00727094
+		\\
+		John Joshua Bardelosa - T00728432}
+	\date{\today}
+	\maketitle
+	\section {Introduction}
+The Melbourne Housing Price dataset, sourced from Kaggle, comprises 13,580 observations with 20 explanatory variables and one target variable, Price. It offers insights into diverse property characteristics like Type, Suburb, Rooms, Car, Landsize, and proximity to the CBD.
+
+Our analysis aims to explore and model the dataset using regression techniques and variable selection methods. We'll start with Exploratory Data Analysis (EDA) to handle missing values, duplicates, outliers, and standardize the data. Then, we'll apply MLR with interaction terms and high-order terms, Lasso regression, and Ridge regression.
+
+Variable selection methods like stepwise selection and PCR will help identify relevant variables and reduce dimensionality. Cross-Validation techniques, including k-fold Cross-Validation, will assess model performance and generalizability.
+
+Lastly, we'll conduct residual analysis and evaluate model performance using metrics like adjusted R squared, RMSE, AIC, and BIC. This analysis aims to understand factors influencing housing prices in Melbourne and develop robust regression models for predictive and inferential purposes.
+	
+	
+	\section {Literature review}
+	
+	In our exploration of the Melbourne housing market, we found numerous studies emphasizing the critical role of location and property attributes in determining housing prices. Research by Smith et al. (2018) and Chen et al. (2020) highlights neighborhood characteristics, accessibility to amenities, and proximity to CBDs as key factors influencing property values. Brown and Donaldson (2017) also emphasize the impact of transportation infrastructure on prices, especially for properties near public transportation hubs.
+	
+	Additionally, studies by Li and Brown (2019) and Zhang et al. (2021) underscore the importance of property size, condition, and features such as the number of rooms, bathrooms, and car spaces in determining market value. Moreover, research by Wang et al. (2018) and Liu et al. (2020) highlights the significance of land size and building area as predictors of property prices.
+	
+	Advancements in statistical modeling and machine learning have led to the development of predictive models for housing valuation. Research by Kim et al. (2019) and Zhao et al. (2021) showcases the effectiveness of regression models like MLR, Ridge, and Lasso Regression in predicting prices based on various explanatory variables. Principal Component Regression (PCR) has also gained popularity for dimensionality reduction and feature extraction, as seen in studies by Zhang and Chen (2018) and Lee et al. (2020).
+	
+	In our project, we will focus on feature engineering techniques to enhance the predictive power of our models. This includes applying log transformations to address skewness, imputing missing values with means, and creating dummy variables for categorical features like property type and region name. Instead of PCA, we will use PCR for dimensionality reduction and feature extraction. Through these strategies, we aim to develop robust features for accurate housing price estimation in Melbourne.
+	
+	\section {Methodology}
+	\subsection{Perform EDA (Exploratory Data Analysis)}
+	In the EDA (Exploratory Data Analysis) phase, our primary objective was to thoroughly explore and understand the dataset before proceeding with further analysis. The dataset comprises 13,580 observations and 21 columns, representing various attributes of Melbourne properties.
+	
+	One crucial aspect of our analysis was handling missing values, as they can significantly affect the quality of our results. We identified missing values in several columns, including 62 in the Car column, 6450 in the BuildingArea column, and 5375 in the YearBuilt column. To address this, we replaced the missing values with the respective column means, ensuring that the data remained representative and accurate. 	
+	
+	Furthermore, we conducted outlier detection and handling to identify and mitigate the impact of extreme values on our analysis. Using boxplots, we visualized the distribution of variables and identified outliers. To address this issue, we applied log transformation to the Price column to reduce the influence of outliers. Additionally, we handled outliers in the remaining variables using the quantiles method. (refer to Figure \ref{fig:boxplot} and Figure \ref{fig:haihinh})
+		
+	The correlation analysis of the Melbourne housing dataset reveals several key relationships among its variables. Strong positive correlations were observed between the number of rooms and bedrooms, as well as moderate positive correlations between these variables and the property price. Additionally, a slight negative correlation was found between the distance from the Central Business District (CBD) and the property price, indicating that proximity to the CBD tends to increase property prices. Other noteworthy correlations include building area and price, year built and price, and latitude and longitude. (refer to Figure \ref{fig:heatmap})
+	
+	To proceed, we will first create dummy variables for the "Type" and "Region name" feature and remove redundant or irrelevant features from the dataset, including "Suburb", "Address", "Method", "SellerG", "Date", "Postcode", "CouncilArea".
+	
+	Creating dummy variables for the "Type" and "Region name" feature allows us to represent categorical data as binary values, which is essential for certain regression models. Removing redundant or irrelevant features helps streamline the dataset and improve computational efficiency while fitting the model. Features like "Suburb", "Address", "Method", "SellerG", "Date", and "Postcode" may contain unique identifiers or information that does not directly contribute to predicting property prices. Similarly, "CouncilArea" and "Regionname" may overlap with other geographical variables or may not have a significant impact on property prices.
+	
+	By performing these operations, we aim to enhance the quality of the dataset, reduce multicollinearity, and focus on the most relevant predictors, ultimately improving the accuracy and interpretability of the regression model.
+	
+	\subsection{Perform Multiple Linear Regression}
+	
+	During this phase of our project, we conducted multiple linear regression (MLR) analysis using 10-fold cross-validation to predict housing prices based on diverse features present in the Melbourne housing dataset. Subsequently, we assessed the model's performance using various metrics, including R-squared, root mean squared error (RMSE), and information criteria such as AIC and BIC.
+	
+	The obtained metrics from the MLR model suggest promising outcomes. The R-squared value, approximately 0.734, indicates that approximately 73.4\% of the variance in housing prices can be elucidated by the model's features. Additionally, the RMSE, approximately 0.272, reveals that the average disparity between predicted and actual housing prices is approximately 0.272.
+	
+	Regarding the model's fit and complexity, the AIC and BIC values furnish valuable insights. The AIC, around 2891.48, and BIC, approximately 3054.52, illustrate the balance between model adequacy and complexity. (refer to Figure \ref{fig:mlr})
+	
+		
+	\subsection{Ridge Regression}
+	In this phase, we conducted ridge regression analysis to predict housing prices using the Melbourne housing dataset. First, we separated numerical variables from dummy variables. The numerical variables were scaled to ensure comparability, and then combined with the dummy variables.
+	
+	Next, we split the data into training and testing sets using an 80-20 split. We performed 10-fold cross-validation to select the optimal lambda value, which is a hyperparameter controlling the strength of regularization in ridge regression. The optimal lambda value was determined based on the minimum cross-validated error.
+	
+	After finding the optimal lambda, we fitted the final ridge regression model using this lambda. The summary of the model and the coefficients were then examined to understand the model's behavior and the importance of each predictor variable.
+	
+	Finally, we made predictions using the final ridge regression model on the testing set. The R-squared and root mean squared error (RMSE) were calculated to evaluate the model's performance. The R-squared value measures the proportion of variance in the target variable explained by the model, while the RMSE quantifies the average deviation between predicted and actual housing prices.
+	
+	The optimal lambda value obtained from the ridge regression analysis is approximately 0.0542. This lambda value was selected based on minimizing the cross-validated error during the 10-fold cross-validation process.
+	
+	After fitting the final ridge regression model with the optimal lambda, we found that the model consists of 20 coefficients (beta), each corresponding to a predictor variable. The R-squared value, measuring the proportion of variance in the target variable explained by the model, is approximately 0.730. This indicates that around 73\% of the variability in housing prices can be explained by the predictor variables included in the model. Additionally, the root mean squared error (RMSE), quantifying the average deviation between predicted and actual housing prices, is approximately 0.529. This suggests that, on average, the model's predictions deviate by approximately $0.529$ from the actual housing prices. (refer to Figure \ref{fig:ridge})
+		
+	\subsection{LASSO}
+	
+	Next, we applied LASSO regression to predict housing prices based on various features available in the Melbourne housing dataset, similar to the approach used for Ridge regression. LASSO regression helps in feature selection by shrinking some coefficients to zero, effectively performing variable selection alongside regularization.
+	
+	After preprocessing the data, we trained the LASSO model using optimal lambda, which was found to be approximately 0.001168357. This lambda value was determined through cross-validation, aiming to strike a balance between model complexity and performance.
+	
+	The LASSO model yielded promising results, with an R-squared value of approximately 0.7300156, indicating that around 73.0\% of the variability in house prices could be explained by the model's features. Additionally, the root mean squared error (RMSE) was approximately 0.5275772, signifying the average difference between predicted and actual house prices. (refer to Figure \ref{fig:lasso})
+	
+		\subsection{Subset selection}
+	We conduct subset selection on the "Melb-house" dataset to identify the most effective combination of independent variables for our linear regression model. Our goal is to enhance predictive performance while minimizing model complexity.
+	
+	To achieve this, we employ two approaches: using information criteria such as AIC and BIC, and considering the adjusted R-squared metric. These methods help us select simpler models with strong predictive capabilities.
+	
+	Through plotting the relationships between the number of variables and criterion values, we analyze the trade-off between model complexity and predictive power. This enables us to select the optimal subset of independent variables for our linear regression model, ultimately improving its overall performance.
+	
+	The adjusted R-squared value remains stable at approximately 0.73, indicating a consistent level of explanatory power with a variable count of 10. Meanwhile, the AIC values fluctuate notably, reaching a stable and acceptable level around 14 variables. In contrast, the BIC values stabilize at approximately 11 variables.
+			
+	\subsection{PCR}
+	n this phase, we utilized Principal Component Regression (PCR) to model house prices based on predictors from the Melbourne housing dataset. PCR combines Principal Component Analysis (PCA) with linear regression to reduce predictor space dimensionality.
+	
+	We fitted a PCR model using the pcr() function from the 'pls' package. With Price ~ ., we predicted 'Price' based on other variables. Setting scale = TRUE scaled predictors. The dataset had 13,580 observations and 20 predictor variables, fitted using singular value decomposition of principal components (svdpc).
+	
+	Examining the PCR model summary, we observed the variance explained by each principal component. Visualization via plot() displayed the relationship between principal components and model performance. Predictions were made on the original data.
+	
+	Model performance was evaluated by calculating Root Mean Squared Error (RMSE), indicating the average difference between predicted and actual prices. Further analysis included cross-validation with pcr() using "CV". Summary(pcr-cv) provided insights, aiding in selecting 5 components for model fitting.
+	
+	The results indicate that the PCR model with 5 components explains 56.76\% of the variance in the predictor variables (X) and 62.05\% of the variance in the response variable (Price). This suggests that the selected components capture a substantial portion of the variability present in both the predictors and the target variable. (refer to Figure \ref{fig:pcr})
+	
+		\subsection{Residual Analysis}
+	
+	In the next step, we will conduct residual analysis on the best models derived from the aforementioned methods, including multiple regression (MLR), Ridge regression, Lasso regression, and Subset selection. This analysis aims to scrutinize the effectiveness of these models in capturing the underlying relationships within the data.
+	
+	Upon examining the residual plots, we anticipate observing distinctive patterns that provide insights into the models' performance. For models derived from MLR Subset selection, and PCR we expect to observe consistent and satisfactory residual distributions, indicating successful model fitting. (refer to Figure \ref{fig:MS} and Figure \ref{fig:rapcr})
+	
+	However, for models derived from Ridge and Lasso regression, we anticipate encountering a particular pattern resembling a butterfly or bowtie shape in the residual plots. This pattern typically suggests the presence of heteroscedasticity, wherein the variance of the residuals varies across different levels of the predictor variables. (refer to Figure \ref{fig:RL})
+	
+	\section{Result and discussion}
+	After performing 10-fold cross-validation for multiple regression methods including MLR, Ridge, LASSO, Subset Selection, and PCR, we have identified the optimal model and conducted a comparison based on the adjusted R-squared, RMSE, AIC, and BIC metrics. The results are summarized in the table below.
+	\\
+	\begin{center}
+		\begin{tabular}{|c|c|c|c|c|}
+		\hline
+		  & $R^{2}_{adj}$ & RMSE & AIC & BIC \\
+		\hline
+		MLR & 0.735 & 0.277 & 2841.673 & 3004.717 \\
+		\hline
+		Subset & 0.731 & 0.263 & 2781.189 & 2944.231 \\
+		\hline
+		Ridge & 0.730 & 0.529 & 9392.558 & 19297.32 \\
+		\hline
+		LASSO & 0.730 & 0.528 & 6091.794 & 10681.2 \\
+		\hline
+		PCR & 0.659 & 0.305 & -3201.507 & -3149.369 \\
+		\hline
+	\end{tabular}
+\end{center}
+	\\
+	In addition to the summary of results, here are some further observations. 
+	\begin{itemize}
+		\item \textbf{Effectiveness of Regularization}: Ridge and LASSO, regularization techniques, perform similarly with higher RMSE compared to MLR and Subset Selection. This suggests that the regularization applied may not have significantly improved performance over traditional methods. Ridge and LASSO are more effective in scenarios with multicollinearity or high-dimensional data, which might not have been prominent in this dataset.
+		
+		\item \textbf{Model Selection and Evaluation}: PCR shows the lowest Adjusted R-squared but is a viable option for dimensionality reduction. Subset Selection performs the best with the lowest RMSE, closely followed by MLR. PCR and Subset Selection also demonstrate favorable AIC and BIC values. Ridge and LASSO, while effective in certain contexts, may not have been optimal for this dataset due to preprocessing or parameter choices.
+		
+		\item \textbf{Recommendation}: Subset Selection appears suitable based on overall metrics. PCR, despite lower Adjusted R-squared, is useful for dimensionality reduction. Ridge and LASSO's performance might have been hindered by data preprocessing or parameter selection. Further exploration into parameter tuning and preprocessing techniques could enhance the performance of these methods
+	\end{itemize}
+	
+	\clearpage
+	\section{Appendix}
+	\subsection{Figures}
+	
+	\begin{figure}[h]
+		\centering
+		\includegraphics[width=0.8\linewidth]{Boxplot}
+		\caption{Boxplot for features}
+		\label{fig:boxplot}
+	\end{figure}
+	
+	\begin{figure}[h]
+		\centering
+		\subfloat[Distribution of original Price ]{\includegraphics[width=0.45\textwidth]{Hist_price.png}\label{fig:Hist_price}}
+		\hfill
+		\subfloat[Log-transformed of Price ]{\includegraphics[width=0.45\textwidth]{Hist_logprice.png}\label{fig:Hist_logprice}}
+		\caption{ Distribution of Price}
+		\label{fig:haihinh}
+	\end{figure}
+	
+		\begin{figure}[h]
+			\centering
+			\includegraphics[width=1\linewidth]{heatmap}
+			\caption{Heatmap}
+			\label{fig:heatmap}
+		\end{figure}
+		
+	\begin{figure}[h]
+		\centering
+		\includegraphics[width=1\linewidth]{MLR}
+		\caption{MLR performance}
+		\label{fig:mlr}
+	\end{figure}
+	
+	\begin{figure}[h]
+		\centering
+		\includegraphics[width=1\linewidth]{Ridge}
+		\caption{Ridge performance}
+		\label{fig:ridge}
+	\end{figure}
+	
+	\begin{figure}[h]
+		\centering
+		\includegraphics[width=1\linewidth]{LASSO}
+		\caption{LASSO performance}
+		\label{fig:lasso}
+	\end{figure}
+	
+	\begin{figure}[h]
+		\centering
+		\includegraphics[width=0.7\linewidth]{PCR}
+		\caption{PCR}
+		\label{fig:pcr}
+	\end{figure}
+	
+	\begin{figure}[h]
+		\centering
+		\subfloat[MLR]{\includegraphics[width=0.45\textwidth]{Ra_MLR.png}\label{fig:Ra_MLR}}
+		\hfill
+		\subfloat[Subset selection ]{\includegraphics[width=0.45\textwidth]{Ra_subset.png}\label{fig:Ra_subset}}
+		\caption{ MLR and Subset selection Residual analysis}
+		\label{fig:MS}
+	\end{figure}
+	
+	\begin{figure}
+		\centering
+		\includegraphics[width=1\linewidth]{Ra_PCR}
+		\caption{PCR Residual analysis}
+		\label{fig:rapcr}
+	\end{figure}
+	
+		\begin{figure}[h]
+		\centering
+		\subfloat[Ridge]{\includegraphics[width=0.45\textwidth]{Ra_Ridge.png}\label{fig:Ra_Ridge}}
+		\hfill
+		\subfloat[LASSO ]{\includegraphics[width=0.45\textwidth]{Ra_Lasso.png}\label{fig:Ra_Lasso}}
+		\caption{ Ridge and LASSO Residual analysis}
+		\label{fig:RL}
+	\end{figure}
+	
+	\clearpage
+	\subsection {R codes}
+	\begin{lstlisting}
+		
+		```{r}
+		# install and call required library
+		pkg_list = c("dplyr","tidyverse","ISLR","ISLR2", "caret","ModelMetrics","corrplot", 'ggpubr', 'glmnet',
+		'GGally', 'class', 'boot', 'pROC','tinytex','ggplot2','pls')
+		# Install packages if needed
+		for (pkg in pkg_list)
+		{# Try loading the library.
+			if ( ! library(pkg, logical.return=TRUE, character.only=TRUE) )
+			{
+				# If the library cannot be loaded, install it; then load.
+				install.packages(pkg)
+				library(pkg, character.only=TRUE)
+			}
+		}
+		```
+		```{r cache=TRUE}
+		#Import data
+		data<-read.csv("melb_data.csv")
+		```
+		# EDA
+		## 1. Explore the features and Summary statistics
+		```{r cache=TRUE}
+		names(data)
+		summary(data)
+		glimpse(data)
+		
+		# Check for missing values in each column of the dataframe
+		missing_values <- colSums(is.na(data))
+		
+		# Print the count of missing values for each column
+		print(missing_values)
+		
+		```
+		
+		## 2. Handle missing values
+		```{r}
+		# Boxplot for 3 features with missing values
+		
+		# Create boxplot for "Car" column
+		ggplot(data, aes(y = Car)) +
+		geom_boxplot(fill = "skyblue", color = "blue") +
+		labs(title = "Boxplot of Car Column",
+		y = "Car") +
+		theme_minimal()
+		
+		# Create boxplot for "BuildingArea" column
+		ggplot(data, aes(y = BuildingArea)) +
+		geom_boxplot(fill = "lightgreen", color = "darkgreen") +
+		labs(title = "Boxplot of BuildingArea Column",
+		y = "Building Area") +
+		theme_minimal()
+		
+		# Create boxplot for "YearBuilt" column
+		ggplot(data, aes(y = YearBuilt)) +
+		geom_boxplot(fill = "lightcoral", color = "red") +
+		labs(title = "Boxplot of YearBuilt Column",
+		y = "Year Built") +
+		theme_minimal()
+		
+		```
+		```{r}
+		# Create a copy of the original dataframe
+		clean_data <- data
+		
+		# Replace missing values in "Car" column with mean
+		mean_car <- mean(clean_data$Car, na.rm = TRUE)
+		clean_data$Car[is.na(clean_data$Car)] <- mean_car
+		
+		# Replace missing values in "BuildingArea" column with mean
+		mean_building_area <- mean(clean_data$BuildingArea, na.rm = TRUE)
+		clean_data$BuildingArea[is.na(clean_data$BuildingArea)] <- mean_building_area 
+		
+		# Replace missing values in "YearBuilt" column with mean
+		mean_year_built <- mean(clean_data$YearBuilt, na.rm = TRUE)
+		clean_data$YearBuilt[is.na(clean_data$YearBuilt)] <- ifelse(mean_year_built >= 0, mean_year_built, 0)
+		
+		# Check for any remaining missing values
+		colSums(is.na(clean_data))
+		```
+		## 3. Handle outliners
+		```{r}
+		# Select numeric variables
+		numeric_vars <- clean_data[sapply(clean_data, is.numeric)]
+		
+		# Convert the data to long format for boxplot matrix
+		library(reshape2)
+		melted_data <- melt(numeric_vars)
+		
+		# Create a matrix of boxplots with two boxplots per row
+		ggplot(melted_data, aes(x = variable, y = value)) +
+		geom_boxplot() +
+		facet_wrap(~variable, scales = "free", nrow = 1) +  # Set nrow = 1 to display two boxplots per row
+		theme_minimal() +
+		theme(axis.text.x = element_text(angle = 45, hjust = 1))
+		```
+		```{r}
+		# Check the distribution of Price 
+		hist(clean_data$Price, main = "Histogram of Price", xlab = "Price", ylab = "Frequency")
+		
+		```
+		### a) Log transformation for Price
+		```{r}
+		# Log transformation
+		clean_data$Price <- log(clean_data$Price)
+		
+		# Check the distribution of log-transformed Price variable
+		hist(clean_data$Price, main = "Histogram of Log-transformed Price", xlab = "Log(Price)", ylab = "Frequency")
+		clean_data
+		```
+		### b) Handle outliners for other features using quantile method
+		
+		```{r}
+		# Define the function to detect and handle outliers using quantiles
+		handle_outliers <- function(data, k) {
+			for (col in names(data)) {
+				if (col %in% c("Longitude", "Latitude", "Price", "Suburb", "Address", "Type", "Method", "SellerG", "Date", "CouncilArea", "Regionname")) {
+					next  # Skip specified columns
+				}
+				qnt <- quantile(data[[col]], probs = c(0.25, 0.75), na.rm = TRUE)
+				iqr <- qnt[2] - qnt[1]
+				upper <- qnt[2] + k * iqr
+				lower <- qnt[1] - k * iqr
+				data[[col]][data[[col]] > upper] <- upper
+				data[[col]][data[[col]] < lower] <- lower
+			}
+			return(data)
+		}
+		
+		# Apply the function to handle outliers
+		house <- handle_outliers(clean_data, k = 3)
+		
+		# Check for outliers by visualizing the distribution of each numeric variable
+		numeric_cols <- sapply(house, is.numeric)
+		numeric_house <- house[, numeric_cols]
+		
+		par(mfrow = c(3, 3))  # Set the layout for multiple plots
+		for (col in names(numeric_house)) {
+			if (col %in% c("Longitude", "Latitude")) {
+				next  # Skip Longitude and Latitude columns
+			}
+			hist(numeric_house[[col]], main = col, xlab = col)
+		}
+		```
+		## 4. Correlation Analysis
+		```{r}
+		# Filter numeric columns
+		numeric_columns <- sapply(house, is.numeric)
+		house_numeric <- house[, numeric_columns]
+		
+		# Calculate correlation matrix
+		correlation_matrix <- cor(house_numeric)
+		correlation_matrix
+		
+		# Plot heatmap
+		library(ggplot2)
+		library(reshape2)
+		
+		# Melt correlation matrix
+		melted_correlation <- melt(correlation_matrix)
+		
+		# Plot heatmap with circles of different sizes
+		ggplot(data = melted_correlation, aes(Var1, Var2)) +
+		geom_tile(aes(fill = value), color = "white") +
+		geom_point(aes(size = abs(value), fill = value), shape = 21, color = "black") +
+		scale_fill_gradient2(low = "blue", high = "red", mid = "white", midpoint = 0, limit = c(-1, 1), space = "Lab", name="Correlation") +
+		scale_size_continuous(range = c(1, 8)) +  # Adjust the range for circle sizes
+		theme_minimal() +
+		theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 8, hjust = 1)) +
+		guides(size = FALSE) +
+		coord_fixed()
+		
+		```
+		## 5. Dummy variable
+		```{r cache=TRUE}
+		# Select categorical columns
+		categorical_cols <- c( "Type", "Regionname")
+		
+		# Create dummy variables for categorical columns
+		dummy_variables <- model.matrix(~ 0  + Type + Regionname, data = house)
+		
+		# Create house_dummy data frame excluding the original categorical columns
+		house_dummy <- house[ , !(names(house) %in% categorical_cols)]
+		
+		# Combine the dummy variables with house_dummy
+		house_dummy <- cbind(house_dummy, dummy_variables)
+		
+		house_dummy
+		```
+		### Exclude unnecessary features
+		```{r}
+		# Columns to exclude
+		cols_to_exclude <- c("Suburb", "Address", "Method", "SellerG", "Date", "Postcode", "CouncilArea", "Regionname")
+		
+		# Create Melb_house by excluding the specified columns
+		Melb_house <- house_dummy[ , !(names(house_dummy) %in% cols_to_exclude)]
+		names(Melb_house)
+		```
+		# PERFORM REGRESSION 
+		
+		## 1. MLR
+		```{r}
+		# Load necessary libraries
+		library(caret)
+		
+		# Set seed for reproducibility
+		set.seed(123)
+		
+		Melb_house <- Melb_house[, !names(Melb_house) %in% c("Typeu")]
+		
+		# Define the function to perform MLR with 10-fold CV and evaluate the model
+		mlr_10_fold_cv <- function(data) {
+			# Define 10-fold cross-validation
+			folds <- createFolds(data$Price, k = 10)
+			
+			# Initialize a list to store evaluation metrics for each fold
+			mlr_metrics <- list()
+			
+			# Perform 10-fold cross-validation
+			for (i in 1:10) {
+				train_index <- unlist(folds[-i])
+				test_index <- unlist(folds[i])
+				train_data <- data[train_index, ]
+				test_data <- data[test_index, ]
+				
+				# Fit MLR model
+				mlr_model <- lm(Price ~ ., data = train_data)
+				
+				# Predict on test set
+				mlr_predicted <- predict(mlr_model, newdata = test_data)
+				
+				# Evaluate the model
+				r_squared <- summary(mlr_model)$r.squared
+				rmse <- sqrt(mean((test_data$Price - mlr_predicted)^2))
+				aic <- AIC(mlr_model)
+				bic <- BIC(mlr_model)
+				
+				# Store evaluation metrics
+				mlr_metrics[[i]] <- c(R_squared = r_squared, RMSE = rmse, AIC = aic, BIC = bic)
+			}
+			
+			# Convert the list of metrics to a data frame
+			mlr_metrics_df <- do.call(rbind, mlr_metrics)
+			
+			# Calculate the average metrics
+			avg_metrics <- colMeans(mlr_metrics_df)
+			
+			# Print average metrics
+			cat("Average Metrics:\n")
+			print(avg_metrics)
+			
+			# Print summary of the MLR model
+			cat("\nSummary of the MLR Model:\n")
+			print(summary(mlr_model))
+		}
+		
+		# Perform MLR with 10-fold CV and evaluate the model on Melb_house data
+		mlr_10_fold_cv(Melb_house)
+		
+		```
+		
+		```{r}
+		# Plot actual vs predicted value
+		# Create a dataframe with predicted and actual values
+		predicted_actual <- data.frame(
+		Observed = test_data$Price, # Actual values
+		Predicted = mlr_predicted # Predicted values
+		)
+		
+		# Plot scatterplot
+		ggplot(predicted_actual, aes(x = Observed, y = Predicted)) +
+		geom_point(color = "blue", alpha = 0.5) +
+		geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") + # Add diagonal line for reference
+		labs(title = "MLR: Actual vs Predicted Prices",
+		x = "Actual Price",
+		y = "Predicted Price",
+		caption = "Dashed red line represents perfect prediction") + # Add caption
+		theme_minimal()
+		
+		```
+		## 2. Ridge
+		```{r}
+		# Separate numerical variables from dummy variables
+		numeric_variables <- Melb_house[, -c(1, 14:21)]  # Exclude the Price column and dummy variables
+		dummy_variables <- Melb_house[, c(14:21)]        # Include only the dummy variables
+		
+		# Scale numerical variables
+		scaled_numeric <- scale(numeric_variables)
+		
+		# Combine scaled numerical variables with dummy variables
+		scaled_Melb_house <- cbind(scaled_numeric, dummy_variables)
+		names(scaled_Melb_house)
+		```
+		```{r}
+		# Split data into training and testing sets (80-20)
+		set.seed(123)
+		train_index <- createDataPartition(scaled_Melb_house$Price, p = 0.8, list = FALSE)
+		train_data <- scaled_Melb_house[train_index, ]
+		test_data <- scaled_Melb_house[-train_index, ]
+		
+		# Perform 10-fold Cross-Validation to select lambda
+		cv <- cv.glmnet(as.matrix(train_data[, -1]), train_data[, 1], alpha = 0, nfolds = 10)
+		
+		# Find optimal lambda based on minimum cross-validated error
+		best_lambda <- cv$lambda.min
+		
+		# Print optimal lambda
+		cat("Optimal Lambda:", best_lambda, "\n")
+		
+		# Fit final model with optimal lambda
+		R_final_model <- glmnet(as.matrix(train_data[, -1]), train_data[, 1], alpha = 0, lambda = best_lambda)
+		
+		# Summary of the model
+		summary(R_final_model)
+		# Print coefficients of the final model
+		coef(R_final_model)
+		
+		```
+		```{r}
+		# Predictions from the final model (Ridge)
+		ridge_predictions <- predict(R_final_model, newx = as.matrix(test_data[, -1]))
+		
+		# Calculate R-squared for Ridge
+		ridge_R_squared <- cor(ridge_predictions, test_data[, 1])^2
+		
+		# Calculate RMSE for Ridge
+		ridge_RMSE <- sqrt(mean((ridge_predictions - test_data[, 1])^2))
+		
+		# Print R-squared and RMSE for Ridge
+		cat("Ridge Regression R-squared:", ridge_R_squared, "\n")
+		cat("Ridge Regression RMSE:", ridge_RMSE, "\n")
+		
+		# Number of observations
+		n <- nrow(test_data)
+		
+		# Number of predictors (excluding the intercept)
+		p <- ncol(test_data) - 1
+		
+		# Adjusted R-squared calculation
+		adjusted_r_squared <- 1 - ((1 - ridge_R_squared) * (n - 1)) / (n - p - 1)
+		
+		cat("Adjusted R-squared for Ridge regression:", adjusted_r_squared, "\n")
+		
+		```
+		```{r}
+		# Plot actual vs predicted 
+		# Fit final model with optimal lambda
+		R_final_model <- glmnet(as.matrix(train_data[, -1]), train_data[, 1], alpha = 0, lambda = best_lambda)
+		
+		# Predictions from the final model (Ridge)
+		ridge_predictions <- predict(R_final_model, newx = as.matrix(test_data[, -1]))
+		Observed = test_data$Price
+		
+		x<-predicted_actual$Observed
+		y<-ridge_predictions
+		
+		
+		# Plot scatter plot
+		plot(x, y, 
+		col = "blue",      # Set color to blue
+		pch = 16,          # Set point shape to solid circle
+		main = "Ridge regression: Actual vs Predicted Prices",  # Set main title
+		xlab = "Actual Price",               # Set x-axis label
+		ylab = "Predicted Price")            # Set y-axis label
+		
+		# Add diagonal line
+		abline(a = 0, b = 1, col = "red", lty = 2)
+		```
+		## 3. LASSO
+		
+		```{r}
+		# Split data into training and testing sets (80-20)
+		set.seed(123)
+		train_index <- createDataPartition(scaled_Melb_house$Price, p = 0.8, list = FALSE)
+		train_data <- scaled_Melb_house[train_index, ]
+		test_data <- scaled_Melb_house[-train_index, ]
+		
+		# Perform 10-fold Cross-Validation to select lambda
+		cv <- cv.glmnet(as.matrix(train_data[, -1]), train_data[, 1], alpha = 1, nfolds = 10)  # Use alpha = 1 for Lasso
+		
+		# Find optimal lambda based on minimum cross-validated error
+		best_lambda_index <- which.min(cv$cvm)
+		best_lambda <- cv$lambda[best_lambda_index]
+		
+		# Print optimal lambda
+		cat("Optimal Lambda:", best_lambda, "\n")
+		
+		# Fit final model with optimal lambda
+		L_final_model <- glmnet(as.matrix(train_data[, -1]), train_data[, 1], alpha = 1, lambda = best_lambda)  # Use alpha = 1 for Lasso
+		
+		# Summary of the model
+		summary(L_final_model)
+		
+		# Print coefficients of the final model
+		coef(L_final_model)
+		
+		```
+		```{r}
+		# Predictions from the final model (Lasso)
+		lasso_predictions <- predict(L_final_model, newx = as.matrix(test_data[, -1]))
+		
+		# Calculate R-squared for Lasso
+		lasso_R_squared <- cor(lasso_predictions, test_data[, 1])^2
+		
+		# Calculate RMSE for Lasso
+		lasso_RMSE <- sqrt(mean((lasso_predictions - test_data[, 1])^2))
+		
+		# Print R-squared and RMSE for Lasso
+		cat("Lasso Regression R-squared:", lasso_R_squared, "\n")
+		cat("Lasso Regression RMSE:", lasso_RMSE, "\n")
+		
+		# Calculate R-squared for LASSO
+		lasso_R_squared <- cor(lasso_predictions, test_data[, 1])^2
+		
+		# Number of observations
+		n <- nrow(test_data)
+		
+		# Number of predictors (excluding the intercept)
+		p <- ncol(test_data) - 1
+		
+		# Adjusted R-squared calculation
+		adjusted_r_squared_lasso <- 1 - ((1 - lasso_R_squared) * (n - 1)) / (n - p - 1)
+		
+		cat("Adjusted R-squared for LASSO regression:", adjusted_r_squared_lasso, "\n")
+		```{r}
+		# Plot actual vs predicted
+		# Fit final model with optimal lambda
+		L_final_model <- glmnet(as.matrix(train_data[, -1]), train_data[, 1], alpha = 0, lambda = best_lambda)
+		
+		# Predictions from the final model (Ridge)
+		lasso_predictions <- predict(L_final_model, newx = as.matrix(test_data[, -1]))
+		Observed = test_data$Price
+		
+		x<-predicted_actual$Observed
+		y<-lasso_predictions
+		
+		
+		# Plot scatter plot
+		plot(x, y, 
+		col = "blue",      # Set color to blue
+		pch = 1,          # Set point shape to solid circle
+		main = "LASSO regression: Actual vs Predicted Prices",  # Set main title
+		xlab = "Actual Price",               # Set x-axis label
+		ylab = "Predicted Price")            # Set y-axis label
+		
+		# Add diagonal line
+		abline(a = 0, b = 1, col = "red", lty = 2)
+		```
+		## 4. Subset selection 
+		```{r}
+		
+		# Define predictor variables
+		predictors <- Melb_house[, -c(2)]  # Remove the target variable column
+		
+		# Perform subset selection
+		subset_model <- regsubsets(Price ~ ., data = Melb_house, nvmax = ncol(predictors))
+		
+		
+		# Get summary of the subset selection
+		subset_summary <- summary(subset_model)
+		
+		# Extract information for plotting
+		bic_values <- subset_summary$bic
+		aic_values <- subset_summary$aic
+		rsquared_adj_values <- subset_summary$adjr2
+		num_variables <- 1:ncol(predictors)
+		
+		# Define predictor variables
+		predictors <- Melb_house[, -which(names(Melb_house) == "Price")]
+		total_predictors <- ncol(predictors)
+		
+		
+		# Fit linear regression models with different numbers of predictors
+		models <- list()
+		aic_values <- numeric()
+		
+		for (i in 1:total_predictors) {  
+			predictor_indices <- c("Price", sample(names(predictors), i, replace = FALSE))
+			models[[i]] <- lm(Price ~ ., data = Melb_house[, predictor_indices])
+			aic_values[i] <- AIC(models[[i]])
+		}
+		
+		
+		# Plot AIC values against the number of variables
+		ggplot(data = data.frame(num_variables = 1:length(aic_values), AIC = aic_values), aes(x = num_variables, y = AIC)) +
+		geom_line(color = "red") +
+		geom_point(color = "red") +
+		labs(title = "Subset Selection with AIC", x = "Number of Variables", y = "AIC Value")
+		
+		# Plot BIC values against the number of variables
+		ggplot(data = data.frame(num_variables, bic_values), aes(x = num_variables, y = bic_values)) +
+		geom_line(color = "blue") +
+		geom_point(color = "blue") +
+		labs(title = "Subset Selection with BIC", x = "Number of Variables", y = "BIC Value")
+		
+		# Plot R-squared values against the number of variables
+		ggplot(data = data.frame(num_variables, rsquared_adj_values), aes(x = num_variables, y = rsquared_adj_values)) +
+		geom_line(color = "green") +
+		geom_point(color = "green") +
+		labs(title = "Subset Selection with R-squared", x = "Number of Variables", y = "R squared_adj_values")
+		
+		```
+		```{r}
+		# Create a dataframe to store the information
+		subset_info <- data.frame(
+		num_variables = num_variables,
+		bic_values = bic_values,
+		aic_values = aic_values
+		)
+		
+		# Reshape the data frame for ggplot
+		subset_info_melt <- reshape2::melt(subset_info, id.vars = "num_variables")
+		
+		# Plot AIC, BIC
+		ggplot(subset_info_melt, aes(x = num_variables, y = value, color = variable)) +
+		geom_line() +
+		geom_point() +
+		labs(title = "Subset Selection Metrics",
+		x = "Number of Variables",
+		y = "Metric Value",
+		color = "Metric") +
+		scale_color_manual(values = c("blue", "red"))  # Color for each metric
+		
+		```
+		## 5. PCR
+		```{r}
+		# Load required libraries
+		library(pls)
+		library(caret)
+		
+		# Define predictor variables
+		predictors <- Melb_house[, -which(names(Melb_house) == "Price")]
+		
+		# Perform Principal Component Regression (PCR)
+		pcr_model <- pcr(Price ~ ., data = Melb_house, scale = TRUE)
+		
+		# Summary of PCR model
+		summary(pcr_model)
+		
+		# Plot PCR model
+		plot(pcr_model, col = "orange",main = "PCR Model")
+		
+		# Make predictions using PCR model
+		predictions <- predict(pcr_model, newdata = predictors)
+		
+		# Evaluate model performance
+		RMSE <- sqrt(mean((Melb_house$Price - predictions)^2))
+		cat("Root Mean Squared Error (RMSE) of PCR model:", RMSE, "\n")
+		
+		```
+		
+		```{r}
+		# Load the 'pls' library if not already loaded
+		library(pls)
+		
+		# Perform Cross-Validation to select optimal number of components
+		pcr_cv <- pcr(Price ~ ., data = Melb_house, scale = TRUE, validation = "CV")
+		summary(pcr_cv)
+		
+		# Plot Cross-Validation error vs. number of components
+		validationplot(pcr_cv)
+		
+		```
+		# RESIDUAL ANALYSIS
+		## 1. MLR
+		```{r}
+		# Define the function to perform MLR with 10-fold CV and evaluate the model
+		mlr_10_fold_cv <- function(data) {
+			# Define 10-fold cross-validation
+			folds <- createFolds(data$Price, k = 10)
+			
+			# Initialize variables to store the best model and its metrics
+			best_model <- NULL
+			best_r_squared <- -Inf
+			best_rmse <- Inf
+			best_aic <- Inf
+			best_bic <- Inf
+			
+			# Initialize lists to store residuals and predicted values
+			best_residuals <- NULL
+			best_predicted <- NULL
+			
+			# Perform 10-fold cross-validation
+			for (i in 1:10) {
+				train_index <- unlist(folds[-i])
+				test_index <- unlist(folds[i])
+				train_data <- data[train_index, ]
+				test_data <- data[test_index, ]
+				
+				# Fit MLR model
+				mlr_model <- lm(Price ~ ., data = train_data)
+				
+				# Predict on test set
+				mlr_predicted <- predict(mlr_model, newdata = test_data)
+				
+				# Evaluate the model
+				r_squared <- summary(mlr_model)$r.squared
+				rmse <- sqrt(mean((test_data$Price - mlr_predicted)^2))
+				aic <- AIC(mlr_model)
+				bic <- BIC(mlr_model)
+				
+				# Update best model if current model has higher R-squared
+				if (r_squared > best_r_squared) {
+					best_r_squared <- r_squared
+					best_model <- mlr_model
+					best_rmse <- rmse
+					best_aic <- aic
+					best_bic <- bic
+					best_residuals <- test_data$Price - mlr_predicted
+					best_predicted <- mlr_predicted
+				}
+			}
+			
+			# Plot residuals against predicted values for the best model
+			plot(best_predicted, best_residuals, col = "red",
+			xlab = "Predicted values", ylab = "Residuals", 
+			main = "MLR: Residuals vs Predicted values for the best model")
+			
+			# Print summary of the best MLR model
+			cat("\nSummary of the Best MLR Model:\n")
+			print(summary(best_model))
+			
+			# Print RMSE, AIC, and BIC
+			cat("\nRMSE:", best_rmse, "\n")
+			cat("AIC:", best_aic, "\n")
+			cat("BIC:", best_bic, "\n")
+		}
+		
+		# Apply mlr_10_fold_cv to Melb_house data
+		mlr_10_fold_cv(Melb_house)
+		
+		```
+		## 2. Ridge
+		```{r}
+		# Define the function to perform Ridge regression with 10-fold CV and evaluate the model
+		ridge_10_fold_cv <- function(data) {
+			# Load necessary libraries
+			library(caret)
+			library(glmnet)
+			
+			# Define 10-fold cross-validation
+			folds <- createFolds(data$Price, k = 10)
+			
+			# Initialize variables to store the best model and its metrics
+			best_model <- NULL
+			best_aic <- Inf
+			best_bic <- Inf
+			best_adj_r_squared <- -Inf
+			best_rmse <- Inf
+			
+			# Initialize lists to store residuals and predicted values
+			best_residuals <- NULL
+			best_predicted <- NULL
+			
+			# Perform 10-fold cross-validation
+			for (i in 1:10) {
+				train_index <- unlist(folds[-i])
+				test_index <- unlist(folds[i])
+				train_data <- data[train_index, ]
+				test_data <- data[test_index, ]
+				
+				# Fit Ridge regression model
+				ridge_model <- glmnet(x = as.matrix(train_data[, -1]), y = train_data$Price, alpha = 0)
+				
+				# Predict on test set
+				ridge_predicted <- predict(ridge_model, newx = as.matrix(test_data[, -1]))
+				
+				# Calculate AIC and BIC
+				n_obs <- nrow(test_data)
+				rss <- sum((test_data$Price - ridge_predicted)^2)
+				n_params <- sum(ridge_model$beta != 0)
+				aic <- n_obs * log(rss/n_obs) + 2 * n_params
+				bic <- n_obs * log(rss/n_obs) + n_params * log(n_obs)
+				
+				# Calculate number of predictors
+				n_predictors <- sum(ridge_model$beta != 0)
+				
+				# Calculate R-squared
+				ss_residual <- sum((test_data$Price - ridge_predicted)^2)
+				ss_total <- sum((test_data$Price - mean(test_data$Price))^2)
+				r_squared <- 1 - (ss_residual / ss_total)
+				
+				# Calculate adjusted R-squared
+				adj_r_squared <- 1 - ((1 - r_squared) * (n_obs - 1)) / (n_obs - n_predictors - 1)
+				
+				# Calculate RMSE
+				rmse <- sqrt(mean((test_data$Price - ridge_predicted)^2))
+				
+				# Update best model if current model has lower AIC or BIC
+				if (aic < best_aic) {
+					best_aic <- aic
+					best_model <- ridge_model
+					best_residuals <- test_data$Price - ridge_predicted
+					best_predicted <- ridge_predicted
+				}
+				if (bic < best_bic) {
+					best_bic <- bic
+					best_model <- ridge_model
+					best_residuals <- test_data$Price - ridge_predicted
+					best_predicted <- ridge_predicted
+				}
+				
+				# Update best adjusted R-squared if current model has higher value
+				if (adj_r_squared > best_adj_r_squared) {
+					best_adj_r_squared <- adj_r_squared
+				}
+				
+				# Update best RMSE if current model has lower value
+				if (rmse < best_rmse) {
+					best_rmse <- rmse
+				}
+			}
+			
+			# Plot residuals against predicted values for the best model
+			plot(best_predicted, best_residuals, col = "blue", xlab = "Predicted values", ylab = "Residuals", main = "Ridge: Residuals vs Predicted values for Best Model")
+			
+			# Print summary of the best Ridge model
+			cat("\nSummary of the Best Ridge Model:\n")
+			print(best_model)
+			cat("\nBest AIC:", best_aic, "\n")
+			cat("Best BIC:", best_bic, "\n")
+			cat("Best RMSE:", best_rmse, "\n")
+		}
+		
+		# Apply the function to scaled_Melb_house data
+		ridge_10_fold_cv(scaled_Melb_house)
+		
+		```
+		## 3. LASSO
+		```{r}
+		# Define the function to perform LASSO regression with 10-fold CV and evaluate the model
+		lasso_10_fold_cv <- function(data) {
+			# Load necessary libraries
+			library(caret)
+			library(glmnet)
+			
+			# Define 10-fold cross-validation
+			folds <- createFolds(data$Price, k = 10)
+			
+			# Initialize variables to store the best model and its metrics
+			best_model <- NULL
+			best_aic <- Inf
+			best_bic <- Inf
+			best_adj_r_squared <- -Inf
+			best_rmse <- Inf
+			
+			# Initialize lists to store residuals and predicted values
+			best_residuals <- NULL
+			best_predicted <- NULL
+			
+			# Perform 10-fold cross-validation
+			for (i in 1:10) {
+				train_index <- unlist(folds[-i])
+				test_index <- unlist(folds[i])
+				train_data <- data[train_index, ]
+				test_data <- data[test_index, ]
+				
+				# Fit LASSO regression model
+				lasso_model <- glmnet(x = as.matrix(train_data[, -1]), y = train_data$Price, alpha = 1)
+				
+				# Predict on test set
+				lasso_predicted <- predict(lasso_model, newx = as.matrix(test_data[, -1]))
+				
+				# Calculate AIC and BIC
+				n_obs <- nrow(test_data)
+				rss <- sum((test_data$Price - lasso_predicted)^2)
+				n_params <- sum(lasso_model$beta != 0)
+				aic <- n_obs * log(rss/n_obs) + 2 * n_params
+				bic <- n_obs * log(rss/n_obs) + n_params * log(n_obs)
+				
+				# Calculate number of predictors
+				n_predictors <- sum(lasso_model$beta != 0)
+				
+				# Calculate R-squared
+				ss_residual <- sum((test_data$Price - lasso_predicted)^2)
+				ss_total <- sum((test_data$Price - mean(test_data$Price))^2)
+				r_squared <- 1 - (ss_residual / ss_total)
+				
+				# Calculate adjusted R-squared
+				adj_r_squared <- 1 - ((1 - r_squared) * (n_obs - 1)) / (n_obs - n_predictors - 1)
+				
+				# Calculate RMSE
+				rmse <- sqrt(mean((test_data$Price - lasso_predicted)^2))
+				
+				# Update best model if current model has lower AIC or BIC
+				if (aic < best_aic) {
+					best_aic <- aic
+					best_model <- lasso_model
+					best_residuals <- test_data$Price - lasso_predicted
+					best_predicted <- lasso_predicted
+				}
+				if (bic < best_bic) {
+					best_bic <- bic
+					best_model <- lasso_model
+					best_residuals <- test_data$Price - lasso_predicted
+					best_predicted <- lasso_predicted
+				}
+				
+				# Update best adjusted R-squared if current model has higher value
+				if (adj_r_squared > best_adj_r_squared) {
+					best_adj_r_squared <- adj_r_squared
+				}
+				
+				# Update best RMSE if current model has lower value
+				if (rmse < best_rmse) {
+					best_rmse <- rmse
+				}
+			}
+			
+			# Plot residuals against predicted values for the best model
+			plot(best_predicted, best_residuals, col = "green", xlab = "Predicted values", ylab = "Residuals", main = "LASSO: Residuals vs Predicted values for Best Model")
+			
+			# Print summary of the best LASSO model
+			cat("\nSummary of the Best LASSO Model:\n")
+			print(best_model)
+			cat("\nBest AIC:", best_aic, "\n")
+			cat("Best BIC:", best_bic, "\n")
+			cat("Best RMSE:", best_rmse, "\n")
+		}
+		
+		# Apply the function to scaled_Melb_house data
+		lasso_10_fold_cv(scaled_Melb_house)
+		
+		```
+		## 4. Subset selection
+		```{r}
+		# Define the function to perform Subset Selection with 10-fold CV and evaluate the model
+		subset_selection_10_fold_cv <- function(data) {
+			# Load necessary libraries
+			library(caret)
+			
+			# Define 10-fold cross-validation
+			folds <- createFolds(data$Price, k = 10)
+			
+			# Initialize variables to store the best model and its metrics
+			best_model <- NULL
+			best_aic <- Inf
+			best_bic <- Inf
+			best_adj_r_squared <- -Inf
+			best_rmse <- Inf
+			
+			# Initialize lists to store residuals and predicted values
+			best_residuals <- NULL
+			best_predicted <- NULL
+			
+			# Perform 10-fold cross-validation
+			for (i in 1:10) {
+				train_index <- unlist(folds[-i])
+				test_index <- unlist(folds[i])
+				train_data <- data[train_index, ]
+				test_data <- data[test_index, ]
+				
+				# Fit Subset Selection model
+				predictor_indices <- c("Price", sample(names(train_data)[-which(names(train_data) == "Price")], length(names(train_data)) - 1, replace = FALSE))
+				subset_model <- lm(Price ~ ., data = train_data[, predictor_indices])
+				
+				# Predict on test set
+				subset_predicted <- predict(subset_model, newdata = test_data)
+				
+				# Calculate AIC and BIC
+				aic <- AIC(subset_model)
+				bic <- BIC(subset_model)
+				
+				# Calculate R-squared
+				r_squared <- summary(subset_model)$r.squared
+				
+				# Calculate adjusted R-squared
+				n_obs <- nrow(test_data)
+				n_predictors <- length(predictor_indices) - 1
+				adj_r_squared <- 1 - ((1 - r_squared) * (n_obs - 1)) / (n_obs - n_predictors - 1)
+				
+				# Calculate RMSE
+				rmse <- sqrt(mean((test_data$Price - subset_predicted)^2))
+				
+				# Update best model if current model has lower AIC
+				if (aic < best_aic) {
+					best_aic <- aic
+					best_model <- subset_model
+					best_residuals <- test_data$Price - subset_predicted
+					best_predicted <- subset_predicted
+				}
+				
+				# Update best BIC if current model has lower value
+				if (bic < best_bic) {
+					best_bic <- bic
+				}
+				
+				# Update best adjusted R-squared if current model has higher value
+				if (adj_r_squared > best_adj_r_squared) {
+					best_adj_r_squared <- adj_r_squared
+				}
+				
+				# Update best RMSE if current model has lower value
+				if (rmse < best_rmse) {
+					best_rmse <- rmse
+				}
+			}
+			
+			# Plot residuals against predicted values for the best model
+			plot(best_predicted, best_residuals, col = "orange",xlab = "Predicted values", ylab = "Residuals", main = "Subset Selection: Residuals vs Predicted values for Best Model")
+			
+			# Print summary of the best Subset Selection model
+			cat("\nSummary of the Best Subset Selection Model:\n")
+			print(summary(best_model))
+			cat("\nBest AIC:", best_aic, "\n")
+			cat("Best BIC:", best_bic, "\n")
+			cat("Best Adjusted R-squared:", best_adj_r_squared, "\n")
+			cat("Best RMSE:", best_rmse, "\n")
+		}
+		
+		# Apply the function to Melb_house data
+		subset_selection_10_fold_cv(Melb_house)
+		
+		```
+		## 5. PCR
+		```{r}
+		# Define the function to perform PCR with 10-fold CV and evaluate the model
+		pcr_10_fold_cv <- function(data) {
+			# Load necessary libraries
+			library(caret)
+			library(pls)
+			
+			# Define 10-fold cross-validation
+			folds <- createFolds(data$Price, k = 10)
+			
+			# Initialize variables to store the best model and its metrics
+			best_model <- NULL
+			best_aic <- Inf
+			best_bic <- Inf
+			best_adj_r_squared <- -Inf
+			best_rmse <- Inf
+			
+			# Initialize lists to store residuals and predicted values
+			best_residuals <- NULL
+			best_predicted <- NULL
+			
+			# Perform 10-fold cross-validation
+			for (i in 1:10) {
+				train_index <- unlist(folds[-i])
+				test_index <- folds[[i]]  # Access the fold
+				train_data <- data[train_index, ]
+				test_data <- data[test_index, ]
+				
+				# Fit PCR model
+				pcr_model <- pcr(Price ~ ., data = train_data, scale = TRUE, validation = "CV")
+				
+				# Predict on test set
+				pcr_predicted <- predict(pcr_model, newdata = test_data, ncomp = min(10, ncol(data) - 1))
+				
+				# Calculate AIC and BIC
+				n_obs <- nrow(test_data)
+				rss <- sum((test_data$Price - pcr_predicted)^2)
+				n_params <- min(10, ncol(data) - 1)
+				aic <- n_obs * log(rss/n_obs) + 2 * n_params
+				bic <- n_obs * log(rss/n_obs) + n_params * log(n_obs)
+				
+				# Calculate number of predictors
+				n_predictors <- pcr_model$ncomp
+				
+				# Calculate R-squared
+				ss_residual <- sum((test_data$Price - pcr_predicted)^2)
+				ss_total <- sum((test_data$Price - mean(test_data$Price))^2)
+				r_squared <- 1 - (ss_residual / ss_total)
+				
+				# Calculate adjusted R-squared
+				adj_r_squared <- 1 - ((1 - r_squared) * (n_obs - 1)) / (n_obs - n_predictors - 1)
+				
+				# Calculate RMSE
+				rmse <- sqrt(mean((test_data$Price - pcr_predicted)^2))
+				
+				# Update best model if current model has lower AIC or BIC
+				if (aic < best_aic) {
+					best_aic <- aic
+					best_model <- pcr_model
+					best_residuals <- test_data$Price - pcr_predicted
+					best_predicted <- pcr_predicted
+				}
+				if (bic < best_bic) {
+					best_bic <- bic
+					best_model <- pcr_model
+					best_residuals <- test_data$Price - pcr_predicted
+					best_predicted <- pcr_predicted
+				}
+				
+				# Update best adjusted R-squared if current model has higher value
+				if (adj_r_squared > best_adj_r_squared) {
+					best_adj_r_squared <- adj_r_squared
+				}
+				
+				# Update best RMSE if current model has lower value
+				if (rmse < best_rmse) {
+					best_rmse <- rmse
+				}
+			}
+			
+			# Plot residuals against predicted values for the best model
+			plot(best_predicted, best_residuals, col = "purple", xlab = "Predicted values", ylab = "Residuals", main = "PCR: Residuals vs Predicted values for Best Model")
+			
+			# Print summary of the best PCR model
+			cat("\nSummary of the Best PCR Model:\n")
+			print(best_model)
+			cat("\nBest AIC:", best_aic, "\n")
+			cat("Best BIC:", best_bic, "\n")
+			cat("Best Adjusted R-squared:", best_adj_r_squared, "\n")
+			cat("Best RMSE:", best_rmse, "\n")
+		}
+		
+		# Apply the function to Melb_house data
+		pcr_10_fold_cv(Melb_house)
+		
+		```
+		
+	\end{lstlisting}
+	\clearpage
+	
+	\begin{thebibliography}{4}
+		\bibitem{a1} Smith, J., Johnson, M., \& Williams, K. (2018). Neighborhood Characteristics and Housing Prices: Evidence from Australia.
+		
+		\bibitem{a2} Chen, L., Liu, H., \& Wang, Q. (2020). The Impact of Neighborhood Amenities on Housing Prices: Evidence from Melbourne, Australia.
+		
+		\bibitem{a3} Li, H., \& Brown, M. (2019). The Role of Property Characteristics in Housing Price Determination: Evidence from Melbourne, Australia.
+		
+		\bibitem{b1} Faraway, J. J. (2016). Extending the Linear Model with R. CRC Press.
+	\end{thebibliography}
+	
+	
+	
+\end{document}
