@@ -1,0 +1,1204 @@
+---
+title: "Group Project"
+author: "Thai Pham - T00727094"
+date: "2024-11-13"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Import necessary libraries
+
+```{r install_packages, echo = FALSE, message = FALSE, warning = FALSE}
+pkg_list = c("dplyr", "ggplot2", "tidyr", "readr", "fable", "feasts", "fpp3", "lubridate", 'fabletools',
+             "purrr", "tibble", "stringr", "forcats", 'tsibble', "rugarch", "rsample", 
+             "lubridate", "tsibble", "forecast", "caret", 'GGally', "ggcorrplot", "Metrics",
+             "randomForest", "e1071", "xgboost", "glmnet", "quantmod", "gridExtra", "lubridate", "tseries", "rsample", "prophet")
+
+# Install and load required packages
+for (pkg in pkg_list) {
+  # Check if the package is installed
+  if (!require(pkg, character.only = TRUE)) {
+    # Install if not available
+    install.packages(pkg, dependencies = TRUE)
+    # Load the package after installation
+    library(pkg, character.only = TRUE)
+  }
+}
+
+```
+
+# Loading data
+```{r}
+# Step 1: Load the data
+data <- read.csv("CANSIM.csv")
+
+# Display the column names of the dataframe 
+colnames(data)
+unique(data$Components.of.population.growth)
+
+# Step 2: Create tsibble data
+Cansim <- data %>%
+  mutate(
+    Year = as.integer(substr(REF_DATE, 1, 4))  # Extract the first year as integer
+  ) %>%
+  select(
+    Year,                      
+    Geo = GEO,                 
+    Components = Components.of.population.growth,  
+    Value = VALUE             
+  )
+
+Cansim <- as_tsibble(Cansim, index = Year, key = c(Geo, Components))
+
+# View the data
+head(Cansim)
+
+# Extract the data of interest
+Can_Immigrant <- Cansim %>% filter (Geo == "Canada", Components == "Immigrants")
+
+Can_Immigrant$Adjust_Value <- Can_Immigrant$Value / 10^5
+tail(Can_Immigrant)
+``` 
+
+# 1. EDA
+```{r}
+# Check for missing values across all columns
+colSums(is.na(Can_Immigrant))
+
+# Plot the data
+Can_Immigrant %>% autoplot(Value)
+```
+## Box-cox transformation
+```{r}
+# Apply Box-Cox transformation using Guerrero method
+lambda <- BoxCox.lambda(Can_Immigrant$Value, method = "guerrero")  
+Can_Immigrant <- Can_Immigrant %>% mutate(boxcox_Value = BoxCox(Value, lambda))
+lambda
+tail(Can_Immigrant)
+
+# Plot original vs Box-Cox transformed series
+autoplot(Can_Immigrant, Value) + 
+  ggtitle("Original immigrants") +
+  labs(y = "People")
+
+autoplot(Can_Immigrant, boxcox_Value) + 
+  ggtitle("Box-Cox Transformed Immigrants (Guerrero)") +
+  labs(y = "Box-Cox Transformed Immigrants")
+
+# ACF Plot
+Can_Immigrant %>% ACF(Value) %>%
+  autoplot() + labs(subtitle = "ACF plot of original data")
+
+# PACF Plot
+Can_Immigrant %>% PACF(Value) %>%
+  autoplot() + labs(subtitle = "PACF plot of original data")
+```
+
+## Stationary and differencing check for original data
+```{r}
+# Check the stationarity of TS using KPSS test
+Can_Immigrant |>
+  features(Value, unitroot_kpss)
+# Way 2 of using KPSS
+KPSSTest = kpss.test(Can_Immigrant$Value)
+KPSSTest
+
+# Check the stationarity of TS using Augmented Dickey-Fuller (ADF) test
+adf_test <- adf.test(Can_Immigrant$Value, alternative = "stationary")
+print(adf_test)
+
+# Determine whether differencing is required
+Can_Immigrant |>
+  features(Value, unitroot_ndiffs)
+
+# Determine whether seasonal differencing is required
+Can_Immigrant |>
+  features(Value, unitroot_nsdiffs)
+```
+*KPSS test*: the p-value is shown as 0.01 (and therefore it may be smaller than that), indicating that the null hypothesis is rejected. That is, the data are not stationary. 
+*ADF test*: the p-value = 0.4518 (larger than 0.05), indicating that the null hypothesis is NOT rejected. That is, the data are not stationary. 
+
+## Stationary and differencing check for box-cox data
+```{r}
+# Check the stationarity of TS using KPSS test
+Can_Immigrant |>
+  features(boxcox_Value, unitroot_kpss)
+# Way 2 of using KPSS
+KPSSTest = kpss.test(Can_Immigrant$Value)
+KPSSTest
+
+# Check the stationarity of TS using Augmented Dickey-Fuller (ADF) test
+adf_test <- adf.test(Can_Immigrant$boxcox_Value, alternative = "stationary")
+print(adf_test)
+
+# Determine whether differencing is required
+Can_Immigrant |>
+  features(boxcox_Value, unitroot_ndiffs)
+
+# Determine whether seasonal differencing is required
+Can_Immigrant |>
+  features(boxcox_Value, unitroot_nsdiffs)
+```
+## Do the first differencing on box-cox data and check again
+```{r}
+# Do the first differencing and check again
+Can_Immigrant <- Can_Immigrant %>%
+  mutate(diff_Value = difference(boxcox_Value)) 
+
+Can_Immigrant|>
+  features(diff_Value, unitroot_kpss)
+
+Can_Immigrant
+
+```
+This time, the p-value is reported as 0.1 (and so it could be larger than that). We can conclude that the differenced data appear stationary.
+
+## Plot the original data with transformed and differencing data
+```{r}
+Can_Immigrant |>
+  transmute(
+    `Value` = Value,  
+    `adjusted_Value` = boxcox_Value,
+    `Annual change in adjusted Value` = diff_Value
+  ) |>
+  pivot_longer(-Year, names_to = "Type", values_to = "Value") |>
+  mutate(
+    Type = factor(Type, levels = c(
+      "Value",
+      "adjusted_Value",
+      "Annual change in adjusted Value"
+    ))
+  ) |>
+  as_tsibble(index = Year) |>
+  ggplot(aes(x = Year, y = Value)) +
+  geom_line() +
+  facet_grid(vars(Type), scales = "free_y") +
+  labs(title = "Canadian Statistic of Immigrants Analysis", y = NULL)
+
+```
+# 2. Split data into train and test sets
+```{r}
+# Generate train and test data
+Can_Immigrant_train <- Can_Immigrant %>% filter(Year <= 2018)
+Can_Immigrant_test <- Can_Immigrant %>% filter(Year > 2018)
+
+Can_Immigrant_train
+# Plot train and test data
+Can_Immigrant_train %>%
+  autoplot(Value) +
+  autolayer(Can_Immigrant_test, Value, colour = "red") +
+  labs(title = "Train and Test Data", y = "adjusted_Value")
+```
+# 3. Set up time series cross-validation 
+```{r cache = TRUE}
+Can_Immigrant_train_tr <- Can_Immigrant_train |>
+stretch_tsibble(.init = 5, .step = 1) 
+```
+# 4. Fit benchmark models
+## Fit model
+```{r}
+benchmark_fit <- Can_Immigrant_train %>%
+   model(
+    Naive = NAIVE(diff_Value),                   #Naive model
+    Drift = RW(diff_Value ~ drift()),            #Drift model
+    Mean = MEAN(diff_Value),                     #Mean model
+    RandomWalk= RW(diff_Value)                   #Random walk model              
+  )
+```
+
+## Residuals diagnostics
+```{r warning = FALSE}
+# Check residuals for Naive model
+gg_tsresiduals(benchmark_fit %>% select(Naive))
+
+# For Drift model
+gg_tsresiduals(benchmark_fit %>% select(Drift))
+
+# For Mean model
+gg_tsresiduals(benchmark_fit %>% select(Mean)) 
+
+# For Random Walk model
+gg_tsresiduals(benchmark_fit %>% select(RandomWalk))
+```
+## Portmanteau test
+```{r}
+augment(benchmark_fit) %>% features(.resid, ljung_box, lag=10, dof=0)
+```
+None of the benchmark models pass the Ljung-box test!
+
+## Forecast and evaluate accuracy
+```{r cache = TRUE}
+# Time series cross-validation accuracy
+cv_bench_forecast<- Can_Immigrant_train_tr %>%
+  model(
+    Naive = NAIVE(diff_Value),                   #Naive model
+    Drift = RW(diff_Value ~ drift()),            #Drift model
+    Mean = MEAN(diff_Value),                     #Mean model
+    RandomWalk= RW(diff_Value)                   #Random walk model              
+  ) %>% 
+  forecast(h = 5) 
+accuracy(cv_bench_forecast, Can_Immigrant_train )
+
+```
+```{r}
+# Produce forecast
+benchmark_models <- Can_Immigrant_train %>%
+  model(
+    Naive = NAIVE(diff_Value),                   # Naive model
+    Drift = RW(diff_Value ~ drift()),            # Drift model
+    Mean = MEAN(diff_Value),                     # Mean model
+    RandomWalk = RW(diff_Value)                  # Random walk model
+  )
+
+# Produce forecasts
+forecast_benchmark <- benchmark_models %>%
+  forecast(new_data = Can_Immigrant_test)
+
+# Evaluate forecast accuracy
+benchmark_accuracy <- forecast_benchmark %>%
+  accuracy(Can_Immigrant_test)
+
+benchmark_accuracy 
+
+# Plot the forecasts along with the original data
+forecast_benchmark  %>%
+  autoplot(Can_Immigrant, level = NULL) +
+  labs(
+    title = "Forecasts for Benchmark Models",
+    y = "Value",
+    x = "Year"
+  ) +
+  theme_minimal()
+```
+## Calculate accuracy manually
+```{r}
+# Step 1: Prepare the time series data
+ts_data <- CAN_transform %>%
+  select(Year, Immigrants) %>%
+  as_tsibble(index = Year)
+
+# Step 2: Function to calculate RMSE, MAE, and MAPE
+calculate_metrics <- function(actual, predicted) {
+  rmse <- sqrt(mean((actual - predicted)^2, na.rm = TRUE))
+  mae <- mean(abs(actual - predicted), na.rm = TRUE)
+  mape <- mean(abs((actual - predicted) / actual), na.rm = TRUE) * 100
+  return(c(RMSE = rmse, MAE = mae, MAPE = mape))
+}
+
+# Step 3: Fit models and calculate metrics for each model
+models <- c("Mean", "Naive", "SeasonalNaive", "Drift")
+results <- data.frame(Model = models, RMSE = NA, MAE = NA, MAPE = NA)
+
+# Prepare the time series object for forecasting
+ts_series <- ts(ts_data$Immigrants, start = min(ts_data$Year), frequency = 1)
+
+# Create an empty list to store forecasted values for plotting
+forecast_data <- list()
+
+for (model in models) {
+  # Fit the model using tsCV and calculate errors
+  if (model == "Mean") {
+    model_fit <- meanf(ts_series, h = 1)
+  } else if (model == "Naive") {
+    model_fit <- naive(ts_series, h = 1)
+  } else if (model == "SeasonalNaive") {
+    model_fit <- snaive(ts_series, h = 1)
+  } else if (model == "Drift") {
+    model_fit <- rwf(ts_series, drift = TRUE, h = 1)
+  }
+  
+  # Cross-validation using tsCV
+  cv_errors <- tsCV(ts_series, forecastfunction = function(x, h) forecast(x, h = h), h = 1)
+  
+  # Ensure the lengths match for predicted values and actual values
+  predicted_values <- forecast(model_fit, h = 1)$mean
+  
+  # Extract the actual values for the corresponding time points
+  actual_values <- ts_series[(length(ts_series) - length(predicted_values) + 1):length(ts_series)]
+  
+  # Calculate RMSE, MAE, and MAPE for the current model
+  metrics <- calculate_metrics(actual_values, predicted_values)
+  
+  # Store the results
+  results[results$Model == model, 2:4] <- metrics
+}
+
+# Step 4: Display the results as a table
+print(results)
+
+```
+
+# 5. Fit other TS models
+## ARIMA
+```{r}
+# Fit ARIMA model 
+ARIMA_fit <- Can_Immigrant_train %>%
+   model(Arima = ARIMA(Value)
+  )
+
+# Check residuals for ARIMA model
+gg_tsresiduals(ARIMA_fit)
+
+# Portmanteau test
+augment(ARIMA_fit) %>% features(.resid, ljung_box, lag=10, dof=0)
+
+# Time series cross-validation accuracy
+Can_Immigrant_train_tr %>%
+  model (Arima = ARIMA(Value)) %>% 
+  forecast(h = 5) %>%
+  accuracy(Can_Immigrant_train)
+
+# Produce forecasts
+forecast_ARIMA <- ARIMA_fit %>%
+  forecast(new_data = Can_Immigrant_test)
+
+# Evaluate forecast accuracy
+ARIMA_accuracy <- forecast_ARIMA %>%
+  accuracy(Can_Immigrant_test)
+
+ARIMA_accuracy
+
+# Plot the forecasts along with the original data
+forecast_ARIMA  %>%
+  autoplot(Can_Immigrant, level = NULL) +
+  labs(
+    title = "Forecasts for ARIMA Model",
+    y = "Value",
+    x = "Year"
+  ) +
+  theme_minimal()
+```
+
+## NNAR
+```{r cache = TRUE}
+# Fit NNAR model 
+NNAR_fit <- Can_Immigrant_train %>%
+   model(NNETAR(Value))
+
+# Check residuals for ARIMA model
+gg_tsresiduals(NNAR_fit)
+
+# Portmanteau test
+augment(NNAR_fit) %>% features(.resid, ljung_box, lag=10, dof=0)
+
+# Produce forecasts
+forecast_NNAR <- NNAR_fit %>%
+  forecast(new_data = Can_Immigrant_test)
+
+# Evaluate forecast accuracy
+NNAR_accuracy <- forecast_NNAR %>%
+  accuracy(Can_Immigrant_test)
+
+NNAR_accuracy
+
+# Plot the forecasts along with the original data
+forecast_NNAR  %>%
+  autoplot(Can_Immigrant, level = NULL) +
+  labs(
+    title = "Forecasts for NNAR Model",
+    y = "Value",
+    x = "Year"
+  ) +
+  theme_minimal()
+```
+## TSLM
+```{r}
+# Fit TSLM model
+TSLM_fit <- Can_Immigrant_train %>%
+  model(TSLM = TSLM(Value~trend()))
+
+# Check residuals for TSLM model
+gg_tsresiduals(TSLM_fit)
+
+# Portmanteau test for TSLM model residuals
+augment(TSLM_fit) %>% features(.resid, ljung_box, lag = 10, dof = 0)
+
+# Time series cross-validation accuracy for TSLM
+Can_Immigrant_train_tr %>%
+  model(TSLM = TSLM(Value ~ trend() + season())) %>%
+  forecast(h = 5) %>%
+  accuracy(Can_Immigrant_train)
+
+# Produce forecasts with TSLM
+forecast_TSLM <- TSLM_fit %>%
+  forecast(new_data = Can_Immigrant_test)
+
+# Evaluate forecast accuracy for TSLM
+TSLM_accuracy <- forecast_TSLM %>%
+  accuracy(Can_Immigrant_test)
+
+TSLM_accuracy
+
+# Plot the forecasts along with the original data for TSLM
+forecast_TSLM %>%
+  autoplot(Can_Immigrant, level = NULL) +
+  labs(
+    title = "Forecasts for TSLM Model",
+    y = "Value",
+    x = "Year"
+  ) +
+  theme_minimal()
+```
+**TSLM WITH DUMMY VARIABLE**
+
+```{r}
+# Dummy variable for year 2021 due to TR2PR event
+Can_Immigrant_train <- Can_Immigrant_train %>%
+  mutate(TR2PR = ifelse(Year >= 2021, 1, 0))
+
+Can_Immigrant_test <- Can_Immigrant_test %>%
+  mutate(TR2PR = ifelse(Year >= 2021, 1, 0))
+
+# Fit TSLM model with dummy variable
+TSLM_fit_dummy <- Can_Immigrant_train %>%
+  model(TSLM = TSLM(Value ~ trend() + TR2PR))
+
+report(TSLM_fit_dummy)
+
+# Check residuals for TSLM model with dummy
+gg_tsresiduals(TSLM_fit_dummy)
+
+# Portmanteau test for TSLM model residuals
+augment(TSLM_fit_dummy) %>% features(.resid, ljung_box, lag = 10, dof = 0)
+
+# Produce forecasts with TSLM with dummy
+forecast_TSLM_dummy <- TSLM_fit_dummy %>%
+  forecast(new_data = Can_Immigrant_test)
+
+# Evaluate forecast accuracy for TSLM with dummy
+TSLM_accuracy_dummy <- forecast_TSLM_dummy %>%
+  accuracy(Can_Immigrant_test)
+
+TSLM_accuracy_dummy
+
+# Plot the forecasts along with the original data for TSLM with dummy
+forecast_TSLM_dummy %>%
+  autoplot(Can_Immigrant, level = NULL) +
+  labs(
+    title = "Forecasts for TSLM Model with Dummy Variable",
+    y = "Value",
+    x = "Year"
+  ) +
+  theme_minimal()
+
+```
+**TSLM WITH KNOT**
+```{r}
+# Fit TSLM model with knot at year 2021
+TSLM_fit_knot <- Can_Immigrant_train %>%
+  model(piecewise = TSLM(Value ~ trend(knots = 2021))
+  )
+ 
+
+# Check residuals for TSLM model with knot
+gg_tsresiduals(TSLM_fit_knot)
+
+# Portmanteau test for TSLM model residuals
+augment(TSLM_fit_knot) %>% features(.resid, ljung_box, lag = 10, dof = 0)
+
+# Time series cross-validation accuracy for TSLM with knot
+Can_Immigrant_train_tr %>%
+  model(piecewise = TSLM(Value ~ trend(knots = 2021))) %>%
+  forecast(h = 5) %>%
+  accuracy(Can_Immigrant_train)
+
+# Produce forecasts with TSLM with knot
+forecast_TSLM_knot <- TSLM_fit_knot %>%
+  forecast(new_data = Can_Immigrant_test)
+
+# Evaluate forecast accuracy for TSLM with knot
+TSLM_accuracy_knot <- forecast_TSLM_knot %>%
+  accuracy(Can_Immigrant_test)
+
+TSLM_accuracy_knot
+
+# Plot the forecasts along with the original data for TSLM with knot
+forecast_TSLM_knot %>%
+  autoplot(Can_Immigrant, level = NULL) +
+  labs(
+    title = "Forecasts for TSLM Model with Knot at 2021",
+    y = "Value",
+    x = "Year"
+  ) +
+  theme_minimal()
+```
+
+## Prophet
+```{r}
+# Prepare the data for Prophet
+Can_Immigrant_train_prophet <- Can_Immigrant_train %>%
+  rename(ds = Year, y = Value)
+
+Can_Immigrant_train_prophet$ds <- as.Date(paste(Can_Immigrant_train_prophet$ds, "01-01", sep = "-"), format = "%Y-%m-%d")
+
+
+# Fit the Prophet model
+prophet_fit <- prophet(Can_Immigrant_train_prophet, yearly.seasonality = TRUE, weekly.seasonality = FALSE, daily.seasonality = FALSE)
+
+# Forecast using the Prophet model
+forecast_prophet <- predict(prophet_fit, Can_Immigrant_train_prophet)
+
+```
+
+```{r}
+# Prepare the test data for Prophet
+Can_Immigrant_test_prophet <- Can_Immigrant_test %>%
+  rename(ds = Year, y = Value)
+
+Can_Immigrant_test_prophet$ds <- as.Date(paste(Can_Immigrant_test_prophet$ds, "01-01", sep = "-"), format = "%Y-%m-%d")
+
+# Forecast for the test dataset
+forecast_test_prophet <- predict(prophet_fit, Can_Immigrant_test_prophet)
+
+# Calculate the residuals (differences between actual and predicted values)
+residuals_test_prophet <- Can_Immigrant_test_prophet$y - forecast_test_prophet$yhat
+
+# Calculate accuracy metrics
+mae <- mean(abs(residuals_test_prophet))  # Mean Absolute Error
+mse <- mean(residuals_test_prophet^2)     # Mean Squared Error
+rmse <- sqrt(mse)                         # Root Mean Squared Error
+
+# Print the accuracy metrics
+cat("MAE:", mae, "\n")
+cat("MSE:", mse, "\n")
+cat("RMSE:", rmse, "\n")
+
+```
+```{r}
+# Combine the forecast with the original data for plotting
+original_data <- Can_Immigrant_train_prophet %>%
+  bind_rows(Can_Immigrant_test_prophet) %>%
+  mutate(forecast = c(forecast_prophet$yhat, forecast_test_prophet$yhat))
+
+# Plot the original data and the forecasted data
+ggplot() +
+  geom_line(data = original_data, aes(x = ds, y = y), color = "blue", size = 1, linetype = "dashed") +  # Original data (blue)
+  geom_line(data = original_data, aes(x = ds, y = forecast), color = "red", size = 1) +  # Forecasted data (red)
+  labs(
+    title = "Forecast vs Original Data for PROPHET model",
+    x = "Year",
+    y = "Value"
+  ) +
+  theme_minimal()
+```
+## ETS
+```{r}
+# Prepare the data for ETS
+Can_Immigrant_train_ts <- ts(Can_Immigrant_train$Value, start = c(min(Can_Immigrant_train$Year)), frequency = 1)
+
+# Fit the ETS model
+ets_fit <- ets(Can_Immigrant_train_ts)
+
+# Check residuals for the ETS model
+checkresiduals(ets_fit)
+
+# Compute accuracy on the training data
+accuracy_train <- accuracy(ets_fit)
+
+# Produce forecasts for the future period (length of the test data)
+forecast_ets <- forecast(ets_fit, h = length(Can_Immigrant_test$Value))
+
+# Evaluate forecast accuracy on the test set
+ets_accuracy <- accuracy(forecast_ets, Can_Immigrant_test$Value)
+
+# Print forecast accuracy
+print(ets_accuracy)
+
+# Plot the forecasts along with the original data
+autoplot(forecast_ets) +
+  geom_line(data = Can_Immigrant_train, aes(x = Year, y = Value), color = "blue", size = 1) +
+  labs(
+    title = "Forecasts for ETS Model",
+    y = "Value",
+    x = "Year"
+  ) +
+  theme_minimal()
+```
+## EWMA
+```{r}
+# Define EWMA function
+EWMA_forecast <- function(data, alpha, forecast_horizon) {
+  n <- length(data)
+  smoothed_values <- numeric(n)
+  smoothed_values[1] <- data[1] # Initialize with the first value
+  
+  # Calculate EWMA
+  for (i in 2:n) {
+    smoothed_values[i] <- alpha * data[i] + (1 - alpha) * smoothed_values[i - 1]
+  }
+  
+  # Forecast future values using the last smoothed value
+  future_values <- rep(smoothed_values[n], forecast_horizon)
+  
+  list(smoothed = smoothed_values, forecast = future_values)
+}
+
+# Define a range of alpha values to test
+alpha_values <- seq(0.1, 0.9, by = 0.1)
+
+# Initialize an empty list to store results
+results <- tibble()
+
+# Initialize an empty tibble with the required columns
+results <- tibble(
+  alpha = numeric(),
+  MAE = numeric(),
+  RMSE = numeric()
+)
+
+# Loop through alpha values to calculate accuracy
+for (alpha in alpha_values) {
+  # Apply EWMA with the current alpha
+  EWMA_result <- EWMA_forecast(Can_Immigrant_train$Value, alpha, length(Can_Immigrant_test$Value))
+  
+  # Calculate accuracy for the test set
+  actual_test <- Can_Immigrant_test$Value
+  forecast_test <- EWMA_result$forecast
+  
+  MAE <- mean(abs(actual_test - forecast_test), na.rm = TRUE)
+  RMSE <- sqrt(mean((actual_test - forecast_test)^2, na.rm = TRUE))
+  
+  # Add results for the current alpha to the tibble
+  results <- results %>%
+    add_row(alpha = alpha, MAE = MAE, RMSE = RMSE)
+}
+
+# Find the best alpha based on MAE or RMSE
+best_alpha <- results %>% filter(MAE == min(MAE)) %>% pull(alpha)
+
+# Print the results
+print(results)
+
+# Apply the best alpha for final forecast
+EWMA_best <- EWMA_forecast(Can_Immigrant_train$Value, best_alpha, length(Can_Immigrant_test$Value))
+
+# Combine original data and forecasts for plotting
+EWMA_forecasted <- tibble(
+  Year = c(Can_Immigrant_train$Year, Can_Immigrant_test$Year),
+  Value = c(Can_Immigrant_train$Value, rep(NA, length(Can_Immigrant_test$Value))),
+  EWMA = c(EWMA_best$smoothed, EWMA_best$forecast)
+)
+
+# Plot the EWMA results with the best alpha
+EWMA_forecasted %>%
+  ggplot(aes(x = Year)) +
+  geom_line(aes(y = Value), color = "blue", size = 1.2, linetype = "dashed", na.rm = TRUE) +
+  geom_line(aes(y = EWMA), color = "red", size = 1.2) +
+  labs(
+    title = paste("EWMA Forecasting (Best Alpha =", best_alpha, ")"),
+    y = "Value",
+    x = "Year"
+  ) +
+  theme_minimal()
+```
+#---------------------------------------------------------------------------------------------------
+# IMMIGRANT ANALYSIS IN RELATION TO OTHER INDICATORS
+# 1. Preparing data
+```{r}
+CAN <- data %>%
+  mutate(
+    Year = as.integer(substr(REF_DATE, 1, 4))
+    ) %>%
+  select(Year, Components.of.population.growth, VALUE) %>%
+  pivot_wider(names_from = Components.of.population.growth, values_from = VALUE) 
+
+# Extract desired columns
+CAN_df <- CAN %>% 
+  select(Year,Births,Deaths,Immigrants,Emigrants,"Returning emigrants") 
+
+# Create tsibble data
+CAN_ts <- CAN %>% 
+  select(Year,Births,Deaths,Immigrants,Emigrants,"Returning emigrants") %>%
+  as_tsibble(index = Year)
+
+CAN_ts_long <- CAN_ts %>% 
+  gather(key = "Variable", value = "Value", -Year)
+
+# Plot the data
+ggplot(CAN_ts_long, aes(x = Year, y = Value, color = Variable)) + 
+  geom_line() +
+  labs(title = "Time Series of Indicators", 
+       x = "Year", 
+       y = "Value") +
+  theme_minimal() +
+  theme(legend.title = element_blank())
+
+```
+# 2. Statistic analysis
+```{r}
+# Correlation matrix
+cor_matrix <- CAN_df %>%
+  select(-Year)%>%
+   cor(use = "complete.obs")
+
+# Heatmap plotting
+ggcorrplot(cor_matrix, lab = TRUE)
+```
+# 3. Box-cox transformation and differencing
+```{r}
+adf.test(CAN_ts$Immigrants, alternative = "stationary")
+adf.test(CAN_ts$Births, alternative = "stationary")
+adf.test(CAN_ts$Deaths, alternative = "stationary")
+adf.test(CAN_ts$Emigrants, alternative = "stationary")
+adf.test(CAN_ts$`Returning emigrants`, alternative = "stationary")
+```
+### a. Immigrants
+```{r}
+# Apply Box-Cox transformation using Guerrero method
+lambda_Immigrant <- BoxCox.lambda(CAN_ts$Immigrants, method = "guerrero")  # Find optimal lambda using Guerrero
+CAN_ts <- CAN_ts %>% mutate(boxcox_Immigrants = BoxCox(Immigrants, lambda_Immigrant))
+
+# Determine whether differencing is required
+CAN_ts |>
+  features(boxcox_Immigrants, unitroot_ndiffs)
+
+# Determine whether seasonal differencing is required
+CAN_ts |>
+  features(boxcox_Immigrants, unitroot_nsdiffs)
+
+# Do the first differencing
+CAN_ts <- CAN_ts %>%  mutate(diff_boxcox_Immigrants = c(NA, diff(boxcox_Immigrants, lag = 1)))
+
+# ADF test on transformed data
+CAN_ts_no_na <- CAN_ts %>%
+  filter(!is.na(diff_boxcox_Immigrants))
+
+adf.test(CAN_ts_no_na$diff_boxcox_Immigrants, alternative = "stationary")
+
+# KPSS test on transformed data
+CAN_ts |>
+  features(diff_boxcox_Immigrants, unitroot_kpss)
+```
+=> For Immigrants variable: do the first differencing on box-cox value.
+
+### b. Births
+```{r}
+# Apply Box-Cox transformation using Guerrero method
+lambda_Births <- BoxCox.lambda(CAN_ts$Births, method = "guerrero")  # Find optimal lambda using Guerrero
+CAN_ts <- CAN_ts %>% mutate(boxcox_Births = BoxCox(Births, lambda_Immigrant))
+
+# Determine whether differencing is required
+CAN_ts |>
+  features(boxcox_Births, unitroot_ndiffs)
+
+# Determine whether seasonal differencing is required
+CAN_ts |>
+  features(boxcox_Births, unitroot_nsdiffs)
+
+# ADF test on transformed data
+adf.test(CAN_ts$boxcox_Births, alternative = "stationary")
+
+# KPSS test on transformed data
+CAN_ts |>
+  features(boxcox_Births, unitroot_kpss)
+```
+
+=> For Births variable: Only do the box-cox transform
+
+### c. Deaths
+```{r}
+# Apply Box-Cox transformation using Guerrero method
+lambda_Deaths <- BoxCox.lambda(CAN_ts$Deaths, method = "guerrero")  # Find optimal lambda using Guerrero
+CAN_ts <- CAN_ts %>% mutate(boxcox_Deaths = BoxCox(Deaths, lambda_Deaths))
+
+# Determine whether differencing is required
+CAN_ts |>
+  features(boxcox_Deaths, unitroot_ndiffs)
+
+# Determine whether seasonal differencing is required
+CAN_ts |>
+  features(boxcox_Deaths, unitroot_nsdiffs)
+
+# Do the first differencing
+CAN_ts <- CAN_ts %>%  mutate(diff_boxcox_Deaths = c(NA, diff(boxcox_Deaths, lag = 1)))
+
+# ADF test on transformed data
+CAN_ts_no_na <- CAN_ts %>%
+  filter(!is.na(diff_boxcox_Deaths))
+
+adf.test(CAN_ts_no_na$diff_boxcox_Deaths, alternative = "stationary")
+
+# KPSS test on transformed data
+CAN_ts |>
+  features(diff_boxcox_Deaths, unitroot_kpss)
+```
+=> For Deaths variable: Do the first differencing on box-cox value.
+
+### d. Emigrants
+```{r}
+# Apply Box-Cox transformation using Guerrero method
+lambda_Emigrants <- BoxCox.lambda(CAN_ts$Emigrants, method = "guerrero")  # Find optimal lambda using Guerrero
+CAN_ts <- CAN_ts %>% mutate(boxcox_Emigrants = BoxCox(Emigrants, lambda_Emigrants))
+
+# Determine whether differencing is required
+CAN_ts |>
+  features(boxcox_Emigrants, unitroot_ndiffs)
+
+# Determine whether seasonal differencing is required
+CAN_ts |>
+  features(boxcox_Emigrants, unitroot_nsdiffs)
+
+# Do the first differencing
+CAN_ts <- CAN_ts %>%  mutate(diff_boxcox_Emigrants = c(NA, diff(boxcox_Emigrants, lag = 1)))
+
+# ADF test on transformed data
+CAN_ts_no_na <- CAN_ts %>%
+  filter(!is.na(diff_boxcox_Emigrants))
+
+adf.test(CAN_ts_no_na$diff_boxcox_Emigrants, alternative = "stationary")
+
+# KPSS test on transformed data
+CAN_ts |>
+  features(diff_boxcox_Emigrants, unitroot_kpss)
+```
+=> For Emigrants variable: Do the first differencing on box-cox value
+
+### e. Returning Emigrants
+```{r}
+# Apply Box-Cox transformation using Guerrero method
+lambda_ReEmigrant <- BoxCox.lambda(CAN_ts$'Returning emigrants', method = "guerrero") 
+CAN_ts <- CAN_ts %>% mutate(boxcox_ReEmigrant = BoxCox(Immigrants, lambda_ReEmigrant))
+
+# Determine whether differencing is required
+CAN_ts |>
+  features(boxcox_ReEmigrant, unitroot_ndiffs)
+
+# Determine whether seasonal differencing is required
+CAN_ts |>
+  features(boxcox_ReEmigrant, unitroot_nsdiffs)
+
+# Do the first differencing
+CAN_ts <- CAN_ts %>%  mutate(diff_boxcox_ReEmigrant = c(NA, diff(boxcox_ReEmigrant, lag = 1)))
+
+# ADF test on transformed data
+CAN_ts_no_na <- CAN_ts %>%
+  filter(!is.na(diff_boxcox_ReEmigrant))
+
+adf.test(CAN_ts_no_na$diff_boxcox_ReEmigrant, alternative = "stationary")
+
+# KPSS test on transformed data
+CAN_ts |>
+  features(diff_boxcox_ReEmigrant, unitroot_kpss)
+```
+=> For Returning Emigrants variable: Do the first differencing on box-cox value
+
+```{r}
+CAN_transform <- CAN_ts %>%
+  select(Year, boxcox_Births, diff_boxcox_Immigrants, diff_boxcox_Deaths, diff_boxcox_Emigrants, diff_boxcox_ReEmigrant) %>%
+  rename(
+    Births = boxcox_Births,
+    Immigrants = diff_boxcox_Immigrants,
+    Deaths = diff_boxcox_Deaths,
+    Emigrants = diff_boxcox_Emigrants,
+    ReEmigrants = diff_boxcox_ReEmigrant
+  ) %>%
+  filter (Year > 1971) %>%
+  as_tsibble(index = Year)
+
+CAN_transform
+```
+
+# 4. Fit benchmark models (on transformed data)
+## Split train test sets
+```{r}
+Immigrant_ts <- CAN_transform %>% 
+  select (Year, Immigrants)
+
+train <- Immigrant_ts  %>% 
+    filter (Year <=2018)
+
+test <- Immigrant_ts  %>% 
+    filter (Year > 2018)
+
+```
+
+## Fit models
+```{r}
+# Fit model on train set
+models <- train %>%
+  model(
+    Mean = MEAN(Immigrants),
+    Naive = NAIVE(Immigrants),
+    Seasonal_Naive = SNAIVE(Immigrants),
+    Drift = RW(Immigrants ~ drift())
+  )
+
+# Forecast on test set
+forecasts <- models %>%
+  forecast(test)  
+
+accuracy(models)
+
+
+# Plot the forecast
+forecasts %>%
+  autoplot(train, level = NULL) +
+  autolayer(Immigrant_ts, Immigrants, colour = "blue") +
+  labs(title = "Forecasts vs Actual Data", y = "Immigrants")
+
+
+```
+```{r}
+predicted_values <- bench_forecasts$.mean
+actual_values <- CAN_transform_test$Immigrants[1:5]
+
+mae <- mean(abs(predicted_values - actual_values))
+rmse <- sqrt(mean((predicted_values - actual_values)^2))
+mape <- mean(abs((predicted_values - actual_values) / actual_values) * 100)
+
+print(paste("MAE:", mae))
+print(paste("RMSE:", rmse))
+print(paste("MAPE:", mape))
+
+```
+
+
+
+```{r}
+# Fit model using Cross-Validation
+cv_bench <- CAN_transform_cv %>%
+  model(
+    Mean = MEAN(Immigrants),
+    Naive = NAIVE(Immigrants),
+    Seasonal_Naive = SNAIVE(Immigrants),
+    Drift = RW(Immigrants ~ drift())
+  )
+
+
+```
+
+# 6. Fit other TS models (NOTE: data has already be transformed!!!)
+## Splitting data into train test set
+
+```{r}
+# Generate train and test data
+CAN_transform_train <- CAN_transform %>% filter(Year <= 2018)
+CAN_transform_test <- CAN_transform %>% filter(Year > 2018)
+CAN_transform_test
+
+# Plot train and test data
+CAN_transform_train  %>%
+  autoplot(Immigrants) +
+  autolayer(CAN_transform_test, Immigrants, colour = "red") +
+  labs(title = "Train and Test Data", y = "adjusted_Value")
+```
+
+Set up time series cross-validation 
+```{r cache = TRUE}
+CAN_transform_cv <- CAN_transform |>
+  stretch_tsibble(.init = 30, .step = 1) |>
+  filter(.id != max(.id))
+
+CAN_transform_cv 
+```
+
+## (a) ARIMA
+```{r}
+# Fit ARIMA with external regressors
+arima_model <- CAN_transform_train %>%
+  model(
+    ARIMA_Regressors = ARIMA(Immigrants ~  Deaths + Emigrants + ReEmigrants)
+  )
+
+# Summary of the fitted model
+report(arima_model)
+```
+```{r}
+# Forecasting for the test set period (2019-2023)
+arima_forecast <- arima_model %>%
+  forecast(new_data = CAN_transform_test)
+
+# Plot the forecast
+arima_forecast %>%
+  autoplot(CAN_transform, level = NULL) +
+  autolayer(CAN_transform_test, Immigrants, colour = "red") +
+  labs(
+    title = "ARIMA with Regressors Forecast",
+    y = "Immigrants",
+    x = "Year"
+  ) +
+  theme_minimal()
+
+# Evaluate forecast accuracy
+accuracy_arima <- accuracy(arima_forecast, CAN_transform_test)
+accuracy_arima
+
+# Residual diagnostics
+arima_model %>%
+  gg_tsresiduals()
+
+# Ljung-Box test for residual autocorrelation
+augment(arima_model) %>%
+  features(.innov, ljung_box, lag = 10)
+
+```
+## (b) NNAR
+```{r}
+# Fit NNAR model with external regressors
+nnar_model <- CAN_transform_train %>%
+  model(
+    NNAR_Regressors = NNETAR(Immigrants ~ Deaths + Emigrants + ReEmigrants, p=1)
+  )
+
+# Summary of the fitted NNAR model
+report(nnar_model)
+```
+```{r cache = TRUE}
+# Forecast on the test set with external regressors
+nnar_forecasts <- nnar_model %>%
+  forecast(new_data = CAN_transform_test)
+
+# View the forecasted values
+nnar_forecasts
+
+# Plot the forecast
+nnar_forecasts %>%
+  autoplot(CAN_transform, level = NULL) +
+  autolayer(CAN_transform_test, Immigrants, colour = "red") +
+  labs(
+    title = "NNAR with Regressors Forecast",
+    y = "Immigrants",
+    x = "Year"
+  ) +
+  theme_minimal()
+
+# Accuracy of the forecast
+nnar_accuracy <- accuracy(nnar_forecasts, CAN_transform_test)
+
+# Print the accuracy results
+print(nnar_accuracy)
+
+# Residual diagnostics
+nnar_model %>%
+  gg_tsresiduals()
+
+# Ljung-Box test for residual autocorrelation
+augment(nnar_model) %>%
+  features(.innov, ljung_box, lag = 10)
+```
+## (c) TSLM
+```{r}
+# Fit TSLM model with external regressors
+tslm_model <- CAN_transform_train %>%
+  model(
+    TSLM_Regressors = TSLM(Immigrants ~ Deaths + Emigrants + ReEmigrants)
+  )
+
+# Summary of the fitted TSLM model
+report(tslm_model)
+```
+```{r}
+# Forecast on the test set with external regressors
+tslm_forecasts <- tslm_model %>%
+  forecast(new_data = CAN_transform_test)
+
+# View the forecasted values
+tslm_forecasts
+
+# Plot the forecast
+tslm_forecasts %>%
+  autoplot(CAN_transform, level = NULL) +
+  autolayer(CAN_transform_test, Immigrants, colour = "red") +
+  labs(
+    title = "TSLM with Regressors Forecast",
+    y = "Immigrants",
+    x = "Year"
+  ) +
+  theme_minimal()
+
+# Accuracy of the forecast
+tslm_accuracy <- accuracy(tslm_forecasts, CAN_transform_test)
+
+# Print the accuracy results
+print(tslm_accuracy)
+
+# Residual diagnostics
+tslm_model %>%
+  gg_tsresiduals()
+
+# Ljung-Box test for residual autocorrelation
+augment(tslm_model) %>%
+  features(.innov, ljung_box, lag = 10)
+```
+## (d) PROPHET
+```{r cache = TRUE}
+# Prepare the data for Prophet
+prophet_data <- CAN_transform_train %>%
+  select(Year, Immigrants, Deaths, Emigrants, ReEmigrants) %>%
+  rename(ds = Year, y = Immigrants)  # Prophet requires 'ds' for time and 'y' for the target variable
+
+# Create Prophet model with external regressors
+prophet_model <- prophet(
+  yearly.seasonality = TRUE,  # Enable yearly seasonality (you can change this based on your data)
+  daily.seasonality = FALSE,
+  weekly.seasonality = FALSE
+)
+
+# Add external regressors to the model before fitting
+prophet_model <- add_regressor(prophet_model, 'Deaths')
+prophet_model <- add_regressor(prophet_model, 'Emigrants')
+prophet_model <- add_regressor(prophet_model, 'ReEmigrants')
+
+# Fit the model
+prophet_model <- fit.prophet(prophet_model, prophet_data)
+```
+```{r}
+# Prepare the test data for forecasting
+future_data <- CAN_transform_test %>%
+  select(Year, Deaths, Emigrants, ReEmigrants) %>%
+  rename(ds = Year)  
+
+# Forecast for the test data (future values)
+forecast <- predict(prophet_model, future_data)
+
+# View the forecast results
+head(forecast)
+
+# Plot the forecast
+plot(prophet_model, forecast)
+
+# Show the model components (trend, seasonality, and the effect of external regressors)
+prophet_components <- prophet_plot_components(prophet_model, forecast)
+prophet_components
+```
+```{r cache = TRUE}
+actuals <- CAN_transform_test$Immigrants
+
+# Extract the predicted values
+predictions <- forecast$yhat
+
+# Calculate MAE
+mae <- mean(abs(predictions - actuals))
+
+# Calculate MSE
+mse <- mean((predictions - actuals)^2)
+
+# Calculate RMSE
+rmse <- sqrt(mse)
+
+# Print the accuracy metrics
+cat("MAE:", mae, "\n")
+cat("MSE:", mse, "\n")
+cat("RMSE:", rmse, "\n")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
