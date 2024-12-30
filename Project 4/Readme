@@ -1,3 +1,4 @@
+                    	Hotel booking EDA and prediction using Python
 This project demonstrates proficiency in data analysis, machine learning, and predictive modeling, with a focus on real-world applications in the hospitality industry.
 -  Exploratory Data Analysis (EDA): Conducted thorough EDA on "Hotel Booking Demand" and "Hotel Reviews" datasets, identifying trends and key patterns in booking behavior and customer preferences.
 -  Data Preprocessing and Feature Engineering: Applied data cleaning techniques such as handling missing values, encoding categorical variables, and scaling features to prepare the data for modeling. Performed feature selection and engineering to improve model accuracy.
